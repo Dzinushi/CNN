@@ -1,4 +1,4 @@
-package net;
+package util;
 
 import util.Size;
 

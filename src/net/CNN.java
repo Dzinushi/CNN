@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import dataset.Mnist;
+import util.MapCNN;
 import util.Size;
 import util.Util;
 

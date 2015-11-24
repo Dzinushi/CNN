@@ -12,9 +12,7 @@ public class Size{
     }
 
     public String toString() {
-        StringBuilder s = new StringBuilder("Size(").append(" x = ")
-                .append(x).append(" y= ").append(y).append(")");
-        return s.toString();
+        return "[" + x  + ";" + y + "]";
     }
 
     public Size divide(Size scaleSize) {

@@ -1,5 +1,6 @@
 package net;
 
+import util.MapCNN;
 import util.Size;
 import util.Util;
 

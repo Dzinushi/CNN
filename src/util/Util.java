@@ -1,10 +1,5 @@
 package util;
 
-import dataset.Mnist;
-import net.MapCNN;
-
-import java.lang.reflect.Array;
-import java.lang.reflect.MalformedParameterizedTypeException;
 import java.util.*;
 
 public class Util {
