@@ -76,15 +76,7 @@ public class Mnist {
     }
 
     private void normalizeData(){
-        double max = Double.MIN_VALUE;
-
-        for (int i = 0; i < getSize(); i++) {
-            int imageSize = getImageWidth() * getImageHeight();
-            for (int j = 0; j < imageSize; j++) {
-                if (max < datas[i][j])  max = datas[i][j];
-            }
-        }
-
+        double max = Util.max(datas);
         datas = Util.normalize(datas, max);
     }
 

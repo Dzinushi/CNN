@@ -4,7 +4,7 @@ import java.util.*;
 
 public class Util {
 
-    public static double max(double[][] data){
+    public static double max(final double[][] data){
         double max = Integer.MIN_VALUE;
 
         for (double[] aData : data) {
