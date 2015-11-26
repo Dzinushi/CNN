@@ -65,15 +65,42 @@ public class Layer {
     }
 
     // Задаем размерность ядра свертки
-    public void setKernel(int outMapNumber){
+    public void setKernel(int mapOutNumber){
         kernel = new ArrayList<>();
-        for (int i = 0; i < outMapNumber; i++) {
+
+        for (int i = 0; i < mapOutNumber; i++) {
             List<MapCNN> mapCNNs = new ArrayList<>();
             for (int j = 0; j < getMapOutNumber(); j++) {
-                MapCNN mapCNN = new MapCNN(getMapsSize());
+                MapCNN mapCNN = new MapCNN(getKernelSize());
                 mapCNNs.add(mapCNN);
             }
             kernel.add(mapCNNs);
+        }
+
+        setKernelRandomValue();
+    }
+
+    public void setOutKernel(int mapOutNumber, Size kernelSize){
+        this.kernelSize = kernelSize;
+        kernel = new ArrayList<>();
+
+        for (int i = 0; i < mapOutNumber; i++) {
+            List<MapCNN> mapCNNs = new ArrayList<>();
+            for (int j = 0; j < getMapOutNumber(); j++) {
+                MapCNN mapCNN = new MapCNN(getKernelSize());
+                mapCNNs.add(mapCNN);
+            }
+            kernel.add(mapCNNs);
+        }
+
+        setKernelRandomValue();
+    }
+
+    private void setKernelRandomValue(){
+        for (List<MapCNN> aKernel : kernel) {
+            for (int j = 0; j < getMapOutNumber(); j++) {
+                aKernel.set(j, Util.randomMapCNN(kernelSize));
+            }
         }
     }
 
@@ -118,17 +145,18 @@ public class Layer {
     }
 
     // Задаем размерность ядра свертки для выходного слоя
-    public void setOutKernel(int outMapNumber, Size mapSize){
-        kernelSize = mapSize;
-        setKernel(outMapNumber);
-
-        for (int i = 0; i < outMapNumber; i++) {
-            List<MapCNN> mapCNNs = kernel.get(i);
-            for (int j = 0; j < getMapOutNumber(); j++) {
-                mapCNNs.set(j, Util.randomMapCNN(mapSize));
-            }
-        }
-    }
+//    public void setOutKernel(int outMapNumber, Size kernelSize){
+//        this.kernelSize = kernelSize;
+//        setKernel(outMapNumber);
+//
+//        for (int i = 0; i < outMapNumber; i++) {
+//            List<MapCNN> mapCNNs = kernel.get(i);
+//            for (int j = 0; j < getMapOutNumber(); j++) {
+//                mapCNNs.set(j, Util.randomMapCNN(kernelSize));
+//            }
+//            kernel.add(mapCNNs);
+//        }
+//    }
 
     public void setMapOutValue(int indexMapOut, int index, int i, int j, double value){
         List<MapCNN> mapCNNs = mapOut.get(indexMapOut);

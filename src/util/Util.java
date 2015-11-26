@@ -59,7 +59,7 @@ public class Util {
         MapCNN mapCNN = new MapCNN(size);
         for (int i = 0; i < size.x; i++) {
             for (int j = 0; j < size.y; j++) {
-                mapCNN.setValue(i,j, ((Math.random() * 2) - 0.05) / 10);
+                mapCNN.setValue(i, j, ((Math.random() * 2) - 0.05) / 10);
             }
         }
         return mapCNN;
