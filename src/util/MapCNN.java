@@ -16,4 +16,12 @@ public class MapCNN {
     public double getValue(int indexRow, int indexColumn){
         return data[indexRow][indexColumn];
     }
+
+    public int getRowNum(){
+        return data.length;
+    }
+
+    public int getColNum(){
+        return data[0].length;
+    }
 }

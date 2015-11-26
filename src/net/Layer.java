@@ -12,13 +12,13 @@ public class Layer {
     private int mapOutNumber;
     private Size mapsSize;
     private Size kernelSize;
-    private Size scaleSize;
+    private Size compressSise;
     private int classNum = -1;
 
-    private List<List<MapCNN>> kernel;
-    private List<List<MapCNN>> error;
-    private List<List<MapCNN>> mapOut;
-    private double[] shift;
+    private List<List<MapCNN>> kernel;  // ядра свертки
+    private List<List<MapCNN>> error;   // ошибки карт
+    private List<List<MapCNN>> mapOut;  // набор карт
+    private double[] t;                 // пороговые значения
 
     enum LayerType {
         INPUT, OUTPUT, CONVOLUTION, SUBSAMPLING
@@ -46,7 +46,7 @@ public class Layer {
     public static Layer sampLayer(Size scaleSize) {
         Layer layer = new Layer();
         layer.type = LayerType.SUBSAMPLING;
-        layer.scaleSize = scaleSize;
+        layer.compressSise = scaleSize;
         return layer;
     }
 
@@ -78,8 +78,13 @@ public class Layer {
     }
 
     // Пока без сдвига (сдвиг = 0)
-    public void setShift(int outMapNumber){
-        shift = new double[outMapNumber];
+    public void setT(int outMapNumber){
+        t = new double[outMapNumber];
+    }
+
+    // Задать значение порога по индексу
+    public void setTValue(int outMapNumber, double value){
+        t[outMapNumber] = value;
     }
 
     // Заданем размерность ошибок
@@ -129,8 +134,10 @@ public class Layer {
         List<MapCNN> mapCNNs = mapOut.get(indexMapOut);
         MapCNN mapCNN = mapCNNs.get(index);
         mapCNN.setValue(i,j, value);
-        mapCNNs.set(index, mapCNN);
-        mapOut.set(indexMapOut, mapCNNs);
+    }
+
+    public void setMapOutValue(int indexMapOut, int index, MapCNN mapCNN){
+        mapOut.get(indexMapOut).set(index, mapCNN);
     }
 
     public LayerType getType(){
@@ -145,6 +152,9 @@ public class Layer {
         return mapOut.get(indexMapOut).get(index);
     }
 
+    public MapCNN getKernel(int indexMapOut, int index){
+        return kernel.get(indexMapOut).get(index);
+    }
     public Size getMapsSize(){
         return mapsSize;
     }
@@ -153,8 +163,8 @@ public class Layer {
         return kernelSize;
     }
 
-    public Size getScaleSize(){
-        return scaleSize;
+    public Size getCompressSise(){
+        return compressSise;
     }
 
     public int getClassNum(){

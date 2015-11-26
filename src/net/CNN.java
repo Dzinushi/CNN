@@ -25,7 +25,6 @@ public class CNN {
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
 
-        // Инициализация остальных слоёв
         for (int i = 0; i < this.layers.size(); i++) {
 
             Layer firstLayer = null, layer;
@@ -43,21 +42,21 @@ public class CNN {
                 case CONVOLUTION:
                     layer.setMapSize(firstLayer.getMapsSize().subtract(layer.getKernelSize(), 1));
                     layer.setKernel(firstLayer.getMapOutNumber());
-                    layer.setShift(firstLayer.getMapOutNumber());
+                    layer.setT(firstLayer.getMapOutNumber());
                     layer.setError(this.batchsize);
                     layer.setMapOut(this.batchsize);
                     break;
 
                 case SUBSAMPLING:
                     layer.setMapOutNumber(firstLayer.getMapOutNumber());
-                    layer.setMapSize(firstLayer.getMapsSize().divide(layer.getScaleSize()));
+                    layer.setMapSize(firstLayer.getMapsSize().divide(layer.getCompressSise()));
                     layer.setError(this.batchsize);
                     layer.setMapOut(this.batchsize);
                     break;
 
                 case OUTPUT:
                     layer.setOutKernel(firstLayer.getMapOutNumber(), firstLayer.getMapsSize());
-                    layer.setShift(firstLayer.getMapOutNumber());
+                    layer.setT(firstLayer.getMapOutNumber());
                     layer.setError(this.batchsize);
                     layer.setMapOut(this.batchsize);
                     break;
@@ -81,7 +80,7 @@ public class CNN {
                 double[] lable = mnist.getLable(index);
                 Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
 
-                trainAllLAyers(image, lable, imageSize, j);
+                trainAllLayers(image, lable, imageSize, j);
 
                 boolean right = backPropogation(image, lable, j);
                 if (right)  precision.increase();
@@ -104,7 +103,7 @@ public class CNN {
         return false;
     }
 
-    private void trainAllLAyers(double[] data, double[] lable, Size imageSize, int indexMapOut){
+    private void trainAllLayers(double[] data, double[] lable, Size imageSize, int indexMapOut){
         for (int i = 0; i < layers.size(); i++) {
 
             Layer layer = null, layerLast = null;
@@ -119,7 +118,7 @@ public class CNN {
                     break;
 
                 case CONVOLUTION:
-                    trainConvLayer(layer, layerLast);
+                    trainConvLayer(layer, layerLast, indexMapOut);
                     break;
 
                 case SUBSAMPLING:
@@ -127,7 +126,7 @@ public class CNN {
                     break;
 
                 case OUTPUT:
-                    trainOutLayer(layer, layerLast);
+                    trainOutLayer(layer, layerLast, indexMapOut);
                     break;
             }
         }
@@ -143,16 +142,64 @@ public class CNN {
         }
     }
 
-    private void trainConvLayer(Layer layer, Layer layerLast){
-
+    // Зачем использовать два layer?
+    // Обучение сверточного слоя
+    private void trainConvLayer(Layer layer, Layer layerLast, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            MapCNN s = null;
+            for (int j = 1; j < layerLast.getMapOutNumber(); j++) {
+                s = sum(layerLast.getMap(indexMapOut, j), layer.getKernel(j,i), s);
+            }
+            layer.setMapOutValue(indexMapOut, i, s);
+        }
     }
 
-    private void trainSubLayer(Layer layer, Layer layerLast){
-
+    // Обучение субдескритизирующего слоя
+    private void trainSubLayer(Layer layer, Layer layerLast, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            MapCNN sampMatrix = Util.compression(layerLast.getMap(indexMapOut, i), layer.getCompressSise());
+            layer.setMapOutValue(indexMapOut, i, sampMatrix);
+        }
     }
 
-    private void trainOutLayer(Layer layer, Layer layerLast){
+    // Обучение выходного слоя
+    private void trainOutLayer(Layer layer, Layer layerLast, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            MapCNN s = null;
+            for (int j = 1; j < layerLast.getMapOutNumber(); j++) {
+                s = sum(layerLast.getMap(indexMapOut, j), layer.getKernel(j,i), s);
+            }
+            layer.setMapOutValue(indexMapOut, i, s);
+        }
+    }
 
+    // Считаем размер карты исходя из размера ядра обхода изображения
+    // Считаем взвешенную сумму для одной карты (функция активации гиперболический тангенс)
+    private MapCNN sum(MapCNN image, MapCNN kernel, MapCNN currentSum){
+        int row = image.getRowNum() - kernel.getRowNum() + 1;
+        int column = image.getColNum() - kernel.getRowNum() + 1;
+        MapCNN result = new MapCNN(new Size(row, column));
+
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < column; j++) {
+                double value = 0;
+                for (int k = 0; k < kernel.getRowNum(); k++) {
+                    for (int l = 0; l < kernel.getColNum(); l++) {
+                        value += image.getValue(i+k, j+j) * kernel.getValue(k,l);
+                    }
+                }
+                if (currentSum != null){
+                    value += currentSum.getValue(i,j);
+                    value = ActivationFunction.hyptan(value);
+                    result.setValue(i, j, value);
+                }
+                else{
+                    result.setValue(i, j, value);
+                }
+            }
+        }
+
+        return result;
     }
 
     private Precision getPrecision(){
