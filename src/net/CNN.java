@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.sun.corba.se.spi.orb.Operation;
 import dataset.Mnist;
 import util.*;
 
@@ -36,29 +37,29 @@ public class CNN {
             switch (layer.getType()){
 
                 case INPUT:
-                    layer.setMapOut(batchSize);
+                    layer.setMapOutSize(batchSize);
                     break;
 
                 case CONVOLUTION:
                     layer.setMapSize(inputLayer.getMapsSize().subtract(layer.getKernelSize(), 1));
                     layer.setKernel(inputLayer.getMapOutNumber());
-                    layer.setT(inputLayer.getMapOutNumber());
-                    layer.setError(this.batchsize);
-                    layer.setMapOut(this.batchsize);
+                    layer.setTSize();
+                    layer.setErrorSize(this.batchsize);
+                    layer.setMapOutSize(this.batchsize);
                     break;
 
                 case SUBSAMPLING:
                     layer.setMapOutNumber(inputLayer.getMapOutNumber());
                     layer.setMapSize(inputLayer.getMapsSize().divide(layer.getCompressSise()));
-                    layer.setError(this.batchsize);
-                    layer.setMapOut(this.batchsize);
+                    layer.setErrorSize(this.batchsize);
+                    layer.setMapOutSize(this.batchsize);
                     break;
 
                 case OUTPUT:
                     layer.setOutKernel(inputLayer.getMapOutNumber(), inputLayer.getMapsSize());
-                    layer.setT(inputLayer.getMapOutNumber());
-                    layer.setError(this.batchsize);
-                    layer.setMapOut(this.batchsize);
+                    layer.setTSize();
+                    layer.setErrorSize(this.batchsize);
+                    layer.setMapOutSize(this.batchsize);
                     break;
             }
         }
@@ -81,8 +82,7 @@ public class CNN {
                 Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
 
                 trainAllLayers(image, lable, imageSize, j);
-
-                boolean right = backPropogation(image, lable, j);
+                boolean right = backPropagation(lable, j);
                 if (right)  precision.increase();
                 LogCNN.printPrecision(getPrecision());
             }
@@ -91,7 +91,58 @@ public class CNN {
 
     // Метод распостранения ошибки сети
     // Дописать рассчет ошибок выходного и скрытого слоев
-    private boolean backPropogation(double[] data, double[] lable, int indexMapOut){
+    private boolean backPropagation(double[] lable, int indexMapOut){
+
+        boolean isRight = false;
+
+        // Ошибки сверточных и субдескритизирующих слоев
+        for (int i = layers.size() - 1; i > 0; i--) {
+            Layer layer = layers.get(i);
+            Layer layerNext = null;
+            if (!Objects.equals(i, layers.size() - 1)){
+                layerNext = layers.get(i+1);
+            }
+
+            switch (layer.getType()){
+
+                case CONVOLUTION:
+                    calcConvErrors(layer, layerNext, indexMapOut);
+                    break;
+
+                case SUBSAMPLING:
+                    calcSubErrors(layer, layerNext);
+                    break;
+
+                case OUTPUT:
+                    isRight = calcOutErrors(lable, indexMapOut);
+                    break;
+            }
+        }
+
+        return isRight;
+    }
+
+    private void calcConvErrors(Layer layer, Layer layerNext, int indexMapOut){
+        MapCNN mapError, map, s, increaseMap;
+
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            mapError = layerNext.getError(indexMapOut, i);
+            map = layer.getMap(indexMapOut, i);
+            s = Util.sumMapCNN(map, map, Util.Op.MULTIPLY);
+
+            increaseMap = Util.increase(mapError, layerNext.getCompressSise());
+            s = Util.sumMapCNN(s, increaseMap, Util.Op.MULTIPLY);
+
+            layer.setErrorMap(indexMapOut, i, s);
+        }
+    }
+
+    private void calcSubErrors(Layer layer, Layer layerNext){
+
+    }
+
+    // Ошибки выходного слоя
+    private boolean calcOutErrors(double[] lable, int indexMapOut){
         Layer outLayer = layers.get(layers.size() - 1); // выходной слой
         double[] mapsOut = new double[outLayer.getMapOutNumber()];
 
@@ -100,7 +151,36 @@ public class CNN {
             mapsOut[i] = mapOut.getValue(0,0);
         }
 
-        return false;
+        int mapSize = outLayer.getMapOutNumber();
+        for (int i = 0; i < mapSize; i++) {
+            double value = mapsOut[i] * (1 - mapsOut[i]) * (lable[i] - mapsOut[i]);
+            outLayer.setErrorValue(indexMapOut, i, 0, 0, value);
+        }
+
+        return isRightLable(mapsOut, lable);
+    }
+
+    private boolean isRightLable(double[] mapsOut, double[] lable){
+        int lableIndex = 0;
+        boolean repeat = true;
+
+        for (int i = 0; i < lable.length & repeat; i++) {
+            if (Objects.equals(lable[i], 1)){
+                lableIndex = i;
+                repeat = false;
+            }
+        }
+
+        int lableIndexNet = 0;
+        repeat = true;
+        for (int i = 0; i < mapsOut.length & repeat; i++) {
+            if (Objects.equals(mapsOut[i], 1)){
+                lableIndexNet = i;
+                repeat = false;
+            }
+        }
+
+        return lableIndexNet == lableIndex;
     }
 
     // Обучение всех слоев нейронной сети
@@ -115,7 +195,7 @@ public class CNN {
 
             switch (layers.get(i).getType()){
                 case INPUT:
-                    trainInputLayer(data, lable, imageSize, indexMapOut);
+                    trainInputLayer(data, imageSize, indexMapOut);
                     break;
 
                 case CONVOLUTION:
@@ -134,7 +214,7 @@ public class CNN {
     }
 
     // Задание изображения на входной слой (всего может быть batchsize изображений на входном слое)
-    private void trainInputLayer(double[] data, double[] lable, Size imageSize, int indexMapOut){
+    private void trainInputLayer(double[] data, Size imageSize, int indexMapOut){
         Layer layer = layers.get(0);
         for (int i = 0; i < imageSize.x; i++) {
             for (int j = 0; j < imageSize.y; j++) {
@@ -143,7 +223,6 @@ public class CNN {
         }
     }
 
-    // Зачем использовать два layer?
     // Обучение сверточного слоя
     private void trainConvLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
@@ -151,6 +230,7 @@ public class CNN {
             for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
                 s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
             }
+            s = activation(s, layer.getT(i));
             layer.setMapOutValue(indexMapOut, i, s);
         }
     }
@@ -167,9 +247,10 @@ public class CNN {
     private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             MapCNN s = null;
-            for (int j = 1; j < layerPrev.getMapOutNumber(); j++) {
+            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
                 s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
             }
+            s = activation(s, layer.getT(i));
             layer.setMapOutValue(indexMapOut, i, s);
         }
     }
@@ -192,7 +273,6 @@ public class CNN {
 
                 if (currentSum != null){
                     value += currentSum.getValue(i,j);
-                    value = ActivationFunction.hyptan(value);
                     result.setValue(i, j, value);
                 }
                 else{
@@ -202,6 +282,16 @@ public class CNN {
         }
 
         return result;
+    }
+
+    // Рассчет функции активации для взвешенной суммы
+    private MapCNN activation(MapCNN s, double tValue){
+        for (int i = 0; i < s.getRowNum(); i++) {
+            for (int j = 0; j < s.getColNum(); j++) {
+                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j)) + tValue);
+            }
+        }
+        return s;
     }
 
     private Precision getPrecision(){

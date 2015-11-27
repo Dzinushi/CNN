@@ -104,9 +104,9 @@ public class Layer {
         }
     }
 
-    // Пока без сдвига (сдвиг = 0)
-    public void setT(int outMapNumber){
-        t = new double[outMapNumber];
+    // Задание размерности порога
+    public void setTSize(){
+        t = new double[getMapOutNumber()];
     }
 
     // Задать значение порога по индексу
@@ -114,8 +114,8 @@ public class Layer {
         t[outMapNumber] = value;
     }
 
-    // Заданем размерность ошибок
-    public void setError(int batchsize){
+    // Задаем размерность ошибок
+    public void setErrorSize(int batchsize){
         error = new ArrayList<>(batchsize);
         for (int i = 0; i < batchsize; i++) {
             List<MapCNN> mapCNNs = new ArrayList<>();
@@ -127,8 +127,18 @@ public class Layer {
         }
     }
 
+    public void setErrorValue(int indexMapOut, int index, int i, int j, double value){
+        List<MapCNN> listMap = error.get(indexMapOut);
+        MapCNN map  = listMap.get(index);
+        map.setValue(i, j, value);
+    }
+
+    public void setErrorMap(int indexMapOut, int index, MapCNN map){
+        error.get(indexMapOut).set(index, map);
+    }
+
     // Задаем размерность карт на выходе
-    public void setMapOut(int batchsize){
+    public void setMapOutSize(int batchsize){
         mapOut = new ArrayList<>(batchsize);
         for (int i = 0; i < batchsize; i++) {
             List<MapCNN> mapCNNs = new ArrayList<>();
@@ -143,20 +153,6 @@ public class Layer {
     public void setMapOutNumber(int mapOutNumber){
         this.mapOutNumber = mapOutNumber;
     }
-
-    // Задаем размерность ядра свертки для выходного слоя
-//    public void setOutKernel(int outMapNumber, Size kernelSize){
-//        this.kernelSize = kernelSize;
-//        setKernel(outMapNumber);
-//
-//        for (int i = 0; i < outMapNumber; i++) {
-//            List<MapCNN> mapCNNs = kernel.get(i);
-//            for (int j = 0; j < getMapOutNumber(); j++) {
-//                mapCNNs.set(j, Util.randomMapCNN(kernelSize));
-//            }
-//            kernel.add(mapCNNs);
-//        }
-//    }
 
     public void setMapOutValue(int indexMapOut, int index, int i, int j, double value){
         List<MapCNN> mapCNNs = mapOut.get(indexMapOut);
@@ -183,6 +179,15 @@ public class Layer {
     public MapCNN getKernel(int indexMapOut, int index){
         return kernel.get(indexMapOut).get(index);
     }
+
+    public double getT(int index){
+        return t[index];
+    }
+
+    public MapCNN getError(int indexMapOut, int index){
+        return error.get(indexMapOut).get(index);
+    }
+
     public Size getMapsSize(){
         return mapsSize;
     }

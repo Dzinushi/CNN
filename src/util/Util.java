@@ -95,4 +95,58 @@ public class Util {
 
         return mapCompressed;
     }
+
+    public static MapCNN increase(MapCNN map, Size size){
+        int row = map.getRowNum();
+        int column = map.getColNum();
+        MapCNN mapIncreased = new MapCNN(new Size(row * size.x, column * size.y));
+
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < column; j++) {
+
+                double max = Double.MIN_VALUE;
+
+                for (int k = i * size.x; k < i * size.x + size.x; k++) {
+                    for (int l = j * size.y; l < j * size.y + size.y; l++) {
+                        mapIncreased.setValue(k, l, map.getValue(i,j));
+                    }
+                }
+            }
+        }
+
+        return mapIncreased;
+    }
+
+    public enum Op{
+        SUM,
+        MULTIPLY
+    }
+
+    public static MapCNN sumMapCNN(MapCNN first, MapCNN second, Op operation){
+        if (!Objects.equals(first.getRowNum(), second.getRowNum()) | !Objects.equals(first.getColNum(), second.getColNum())){
+            System.out.printf("Ошибка. Попытка сложения карт разного размера: [%d;%d] и [%d;%d]\n",
+                    first.getRowNum(),
+                    first.getColNum(),
+                    second.getRowNum(),
+                    second.getColNum());
+            System.exit(-1);
+        }
+
+        MapCNN sum = new MapCNN(new Size(first.getRowNum(), first.getColNum()));
+
+        for (int i = 0; i < first.getRowNum(); i++) {
+            for (int j = 0; j < second.getColNum(); j++) {
+                if (operation == Op.SUM){
+                    double value = first.getValue(i,j) + second.getValue(i,j);
+                    sum.setValue(i, j, value);
+                }
+                else if (operation == Op.MULTIPLY){
+                    double value = (1 - first.getValue(i,j)) * second.getValue(i,j);
+                    sum.setValue(i, j, value);
+                }
+            }
+        }
+
+        return sum;
+    }
 }

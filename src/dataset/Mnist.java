@@ -80,26 +80,6 @@ public class Mnist {
         datas = Util.normalize(datas, max);
     }
 
-//    public double[][] dataCopyOfRange(int[] randIndex, int indexOf, int indexOut){
-//        double[][] rangeData = new double[indexOut - indexOf][getImageWidth() * getImageHeight()];
-//        for (int i = indexOf, index = 0; i < indexOut; i++, index++) {
-//            rangeData[index] = datas[randIndex[i]];
-//        }
-//
-//        return rangeData;
-//    }
-//
-//    public double[][] lableCopyOf(int randIndex[], int indexOf, int indexOut){
-//        double[][] rangeLable = new double[10][indexOut - indexOf];
-//        for (int i = 0; i < 10; i++) {
-//            for (int j = indexOf; j < indexOut; j++) {
-//                rangeLable[i][j] = lable[randIndex[j]][i];
-//            }
-//        }
-//
-//        return rangeLable;
-//    }
-
     public double[] getData(int index){
         return datas[index];
     }
