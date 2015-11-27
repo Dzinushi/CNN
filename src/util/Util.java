@@ -55,17 +55,17 @@ public class Util {
         return randpermData;
     }
 
-    public static MapCNN randomMapCNN(Size size){
-        MapCNN mapCNN = new MapCNN(size);
+    public static Matrix randomMapCNN(Size size){
+        Matrix matrix = new Matrix(size);
         for (int i = 0; i < size.x; i++) {
             for (int j = 0; j < size.y; j++) {
-                mapCNN.setValue(i, j, ((Math.random() * 2) - 0.05) / 10);
+                matrix.setValue(i, j, ((Math.random() * 2) - 0.05) / 10);
             }
         }
-        return mapCNN;
+        return matrix;
     }
 
-    public static MapCNN compression(MapCNN map, Size size){
+    public static Matrix compression(Matrix map, Size size){
         int modWidth = Math.floorMod(map.getRowNum(), size.x);
         int modHeight = Math.floorMod(map.getColNum(), size.y);
 
@@ -76,7 +76,7 @@ public class Util {
 
         int row = map.getRowNum() / size.x;
         int column = map.getColNum() / size.y;
-        MapCNN mapCompressed = new MapCNN(new Size(row, column));
+        Matrix mapCompressed = new Matrix(new Size(row, column));
 
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < column; j++) {
@@ -96,10 +96,10 @@ public class Util {
         return mapCompressed;
     }
 
-    public static MapCNN increase(MapCNN map, Size size){
+    public static Matrix increase(Matrix map, Size size){
         int row = map.getRowNum();
         int column = map.getColNum();
-        MapCNN mapIncreased = new MapCNN(new Size(row * size.x, column * size.y));
+        Matrix mapIncreased = new Matrix(new Size(row * size.x, column * size.y));
 
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < column; j++) {
@@ -122,7 +122,7 @@ public class Util {
         MULTIPLY
     }
 
-    public static MapCNN sumMapCNN(MapCNN first, MapCNN second, Op operation){
+    public static Matrix sumMapCNN(Matrix first, Matrix second, Op operation){
         if (!Objects.equals(first.getRowNum(), second.getRowNum()) | !Objects.equals(first.getColNum(), second.getColNum())){
             System.out.printf("Ошибка. Попытка сложения карт разного размера: [%d;%d] и [%d;%d]\n",
                     first.getRowNum(),
@@ -132,7 +132,7 @@ public class Util {
             System.exit(-1);
         }
 
-        MapCNN sum = new MapCNN(new Size(first.getRowNum(), first.getColNum()));
+        Matrix sum = new Matrix(new Size(first.getRowNum(), first.getColNum()));
 
         for (int i = 0; i < first.getRowNum(); i++) {
             for (int j = 0; j < second.getColNum(); j++) {

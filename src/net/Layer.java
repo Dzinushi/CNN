@@ -1,6 +1,6 @@
 package net;
 
-import util.MapCNN;
+import util.Matrix;
 import util.Size;
 import util.Util;
 
@@ -15,9 +15,9 @@ public class Layer {
     private Size compressSise;
     private int classNum = -1;
 
-    private List<List<MapCNN>> kernel;  // ядра свертки
-    private List<List<MapCNN>> error;   // ошибки карт
-    private List<List<MapCNN>> mapOut;  // набор карт
+    private List<List<Matrix>> kernel;  // ядра свертки
+    private List<List<Matrix>> error;   // ошибки карт
+    private List<List<Matrix>> mapOut;  // набор карт
     private double[] t;                 // пороговые значения
 
     enum LayerType {
@@ -69,12 +69,12 @@ public class Layer {
         kernel = new ArrayList<>();
 
         for (int i = 0; i < mapOutNumber; i++) {
-            List<MapCNN> mapCNNs = new ArrayList<>();
+            List<Matrix> matrixes = new ArrayList<>();
             for (int j = 0; j < getMapOutNumber(); j++) {
-                MapCNN mapCNN = new MapCNN(getKernelSize());
-                mapCNNs.add(mapCNN);
+                Matrix matrix = new Matrix(getKernelSize());
+                matrixes.add(matrix);
             }
-            kernel.add(mapCNNs);
+            kernel.add(matrixes);
         }
 
         setKernelRandomValue();
@@ -85,19 +85,19 @@ public class Layer {
         kernel = new ArrayList<>();
 
         for (int i = 0; i < mapOutNumber; i++) {
-            List<MapCNN> mapCNNs = new ArrayList<>();
+            List<Matrix> matrixes = new ArrayList<>();
             for (int j = 0; j < getMapOutNumber(); j++) {
-                MapCNN mapCNN = new MapCNN(getKernelSize());
-                mapCNNs.add(mapCNN);
+                Matrix matrix = new Matrix(getKernelSize());
+                matrixes.add(matrix);
             }
-            kernel.add(mapCNNs);
+            kernel.add(matrixes);
         }
 
         setKernelRandomValue();
     }
 
     private void setKernelRandomValue(){
-        for (List<MapCNN> aKernel : kernel) {
+        for (List<Matrix> aKernel : kernel) {
             for (int j = 0; j < getMapOutNumber(); j++) {
                 aKernel.set(j, Util.randomMapCNN(kernelSize));
             }
@@ -118,22 +118,22 @@ public class Layer {
     public void setErrorSize(int batchsize){
         error = new ArrayList<>(batchsize);
         for (int i = 0; i < batchsize; i++) {
-            List<MapCNN> mapCNNs = new ArrayList<>();
+            List<Matrix> matrixes = new ArrayList<>();
             for (int j = 0; j < getMapOutNumber(); j++) {
-                MapCNN mapCNN = new MapCNN(getMapsSize());
-                mapCNNs.add(mapCNN);
+                Matrix matrix = new Matrix(getMapsSize());
+                matrixes.add(matrix);
             }
-            error.add(mapCNNs);
+            error.add(matrixes);
         }
     }
 
     public void setErrorValue(int indexMapOut, int index, int i, int j, double value){
-        List<MapCNN> listMap = error.get(indexMapOut);
-        MapCNN map  = listMap.get(index);
+        List<Matrix> listMap = error.get(indexMapOut);
+        Matrix map  = listMap.get(index);
         map.setValue(i, j, value);
     }
 
-    public void setErrorMap(int indexMapOut, int index, MapCNN map){
+    public void setErrorMap(int indexMapOut, int index, Matrix map){
         error.get(indexMapOut).set(index, map);
     }
 
@@ -141,12 +141,12 @@ public class Layer {
     public void setMapOutSize(int batchsize){
         mapOut = new ArrayList<>(batchsize);
         for (int i = 0; i < batchsize; i++) {
-            List<MapCNN> mapCNNs = new ArrayList<>();
+            List<Matrix> matrixes = new ArrayList<>();
             for (int j = 0; j < getMapOutNumber(); j++) {
-                MapCNN mapCNN = new MapCNN(getMapsSize());
-                mapCNNs.add(mapCNN);
+                Matrix matrix = new Matrix(getMapsSize());
+                matrixes.add(matrix);
             }
-            mapOut.add(mapCNNs);
+            mapOut.add(matrixes);
         }
     }
 
@@ -155,13 +155,13 @@ public class Layer {
     }
 
     public void setMapOutValue(int indexMapOut, int index, int i, int j, double value){
-        List<MapCNN> mapCNNs = mapOut.get(indexMapOut);
-        MapCNN mapCNN = mapCNNs.get(index);
-        mapCNN.setValue(i,j, value);
+        List<Matrix> matrixes = mapOut.get(indexMapOut);
+        Matrix matrix = matrixes.get(index);
+        matrix.setValue(i,j, value);
     }
 
-    public void setMapOutValue(int indexMapOut, int index, MapCNN mapCNN){
-        mapOut.get(indexMapOut).set(index, mapCNN);
+    public void setMapOutValue(int indexMapOut, int index, Matrix matrix){
+        mapOut.get(indexMapOut).set(index, matrix);
     }
 
     public LayerType getType(){
@@ -172,11 +172,11 @@ public class Layer {
         return mapOutNumber;
     }
 
-    public MapCNN getMap(int indexMapOut, int index){
+    public Matrix getMap(int indexMapOut, int index){
         return mapOut.get(indexMapOut).get(index);
     }
 
-    public MapCNN getKernel(int indexMapOut, int index){
+    public Matrix getKernel(int indexMapOut, int index){
         return kernel.get(indexMapOut).get(index);
     }
 
@@ -184,7 +184,7 @@ public class Layer {
         return t[index];
     }
 
-    public MapCNN getError(int indexMapOut, int index){
+    public Matrix getError(int indexMapOut, int index){
         return error.get(indexMapOut).get(index);
     }
 

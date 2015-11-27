@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.sun.corba.se.spi.orb.Operation;
 import dataset.Mnist;
 import util.*;
 
@@ -110,7 +109,7 @@ public class CNN {
                     break;
 
                 case SUBSAMPLING:
-                    calcSubErrors(layer, layerNext);
+                    calcSubErrors(layer, layerNext, indexMapOut);
                     break;
 
                 case OUTPUT:
@@ -123,7 +122,7 @@ public class CNN {
     }
 
     private void calcConvErrors(Layer layer, Layer layerNext, int indexMapOut){
-        MapCNN mapError, map, s, increaseMap;
+        Matrix mapError, map, s, increaseMap;
 
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             mapError = layerNext.getError(indexMapOut, i);
@@ -137,8 +136,13 @@ public class CNN {
         }
     }
 
-    private void calcSubErrors(Layer layer, Layer layerNext){
+    private void calcSubErrors(Layer layer, Layer layerNext, int indexMapOut){
+        Matrix mapError, kernel, s;
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            mapError = layerNext.getError(indexMapOut, i);
+            kernel = layerNext.getKernel(indexMapOut, i);
 
+        }
     }
 
     // Ошибки выходного слоя
@@ -147,7 +151,7 @@ public class CNN {
         double[] mapsOut = new double[outLayer.getMapOutNumber()];
 
         for (int i = 0; i < mapsOut.length; i++) {
-            MapCNN mapOut = outLayer.getMap(indexMapOut, i);
+            Matrix mapOut = outLayer.getMap(indexMapOut, i);
             mapsOut[i] = mapOut.getValue(0,0);
         }
 
@@ -226,7 +230,7 @@ public class CNN {
     // Обучение сверточного слоя
     private void trainConvLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            MapCNN s = null;
+            Matrix s = null;
             for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
                 s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
             }
@@ -238,7 +242,7 @@ public class CNN {
     // Обучение субдескритизирующего слоя
     private void trainSubLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            MapCNN sampMatrix = Util.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
+            Matrix sampMatrix = Util.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
             layer.setMapOutValue(indexMapOut, i, sampMatrix);
         }
     }
@@ -246,7 +250,7 @@ public class CNN {
     // Обучение выходного слоя
     private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            MapCNN s = null;
+            Matrix s = null;
             for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
                 s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
             }
@@ -257,10 +261,10 @@ public class CNN {
 
     // Считаем размер карты исходя из размера ядра обхода изображения
     // Считаем взвешенную сумму для одной карты (функция активации гиперболический тангенс)
-    private MapCNN sum(MapCNN image, MapCNN kernel, MapCNN currentSum){
+    private Matrix sum(Matrix image, Matrix kernel, Matrix currentSum){
         int row = image.getRowNum() - kernel.getRowNum() + 1;
         int column = image.getColNum() - kernel.getColNum() + 1;
-        MapCNN result = new MapCNN(new Size(row, column));
+        Matrix result = new Matrix(new Size(row, column));
 
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < column; j++) {
@@ -285,7 +289,7 @@ public class CNN {
     }
 
     // Рассчет функции активации для взвешенной суммы
-    private MapCNN activation(MapCNN s, double tValue){
+    private Matrix activation(Matrix s, double tValue){
         for (int i = 0; i < s.getRowNum(); i++) {
             for (int j = 0; j < s.getColNum(); j++) {
                 s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j)) + tValue);

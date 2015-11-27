@@ -2,7 +2,9 @@ import dataset.Mnist;
 import net.CNN;
 import net.Layer;
 import net.CreateLayer;
+import util.Matrix;
 import util.Size;
+import util.Util;
 
 import java.io.IOException;
 
