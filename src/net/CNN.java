@@ -13,9 +13,14 @@ public class CNN {
     private int batchsize;
     private List<Layer> layers;
     private Precision precision;
+    private double lambda;
+    private double alpha;
 
+    // Задано константное значение alpha
     public CNN(){
         batchsize = 0;
+        lambda = 0;
+        alpha = 0.5;
         layers = new ArrayList<>();
         precision = new Precision();
     }
@@ -41,7 +46,7 @@ public class CNN {
 
                 case CONVOLUTION:
                     layer.setMapSize(inputLayer.getMapsSize().subtract(layer.getKernelSize(), 1));
-                    layer.setKernel(inputLayer.getMapOutNumber());
+                    layer.setKernelSize(inputLayer.getMapOutNumber());
                     layer.setTSize();
                     layer.setErrorSize(this.batchsize);
                     layer.setMapOutSize(this.batchsize);
@@ -70,23 +75,34 @@ public class CNN {
     * */
     public void train(Mnist mnist, int iteration){
         int numbatches = mnist.getSize() / batchsize;
+        this.precision.setCount(mnist.getSize());
 
         for (int i = 0; i < iteration; i++) {
             int[] randIndexes = Util.randPerm(mnist.getSize());
 
             for (int j = 0; j < numbatches; j++) {
-                int index = randIndexes[i * batchsize + j];
-                double[] image = mnist.getData(index);
-                double[] lable = mnist.getLable(index);
-                Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
+                for (int k = 0; k < batchsize; k++) {
+                    int index = randIndexes[j * batchsize + k];
+                    double[] image = mnist.getData(index);
+                    double[] lable = mnist.getLable(index);
+                    Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
 
-                trainAllLayers(image, lable, imageSize, j);
-                boolean right = backPropagation(lable, j);
-                if (right)  precision.increase();
-                LogCNN.printPrecision(getPrecision());
+                    trainAllLayers(image, lable, imageSize, j);
+                    boolean right = backPropagation(lable, j);
+
+                    if (right){
+                        precision.increase();
+                    }
+                }
+
+                updateTandKernel();
             }
+            LogCNN.printPrecision(getPrecision());
+            precision.resetValue();
         }
     }
+
+
 
     // Метод распостранения ошибки сети
     // Дописать рассчет ошибок выходного и скрытого слоев
@@ -95,6 +111,7 @@ public class CNN {
         boolean isRight = false;
 
         // Ошибки сверточных и субдескритизирующих слоев
+        // 0-й слой - входной слой, не имеющий ошибок, содержащий эталонные значения
         for (int i = layers.size() - 1; i > 0; i--) {
             Layer layer = layers.get(i);
             Layer layerNext = null;
@@ -127,22 +144,41 @@ public class CNN {
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             mapError = layerNext.getError(indexMapOut, i);
             map = layer.getMap(indexMapOut, i);
-            s = Util.sumMapCNN(map, map, Util.Op.MULTIPLY);
+            s = MatrixOperation.operation(map, map, MatrixOperation.Op.MULTIPLY);
 
-            increaseMap = Util.increase(mapError, layerNext.getCompressSise());
-            s = Util.sumMapCNN(s, increaseMap, Util.Op.MULTIPLY);
+            increaseMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
+            s = MatrixOperation.operation(s, increaseMap, MatrixOperation.Op.MULTIPLY);
 
             layer.setErrorMap(indexMapOut, i, s);
         }
     }
 
+    // Вычисление ошибки субдескритизирующего слоя
     private void calcSubErrors(Layer layer, Layer layerNext, int indexMapOut){
-        Matrix mapError, kernel, s;
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            mapError = layerNext.getError(indexMapOut, i);
-            kernel = layerNext.getKernel(indexMapOut, i);
-
+            Matrix mapError, kernel, s = null;
+            for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
+                mapError = layerNext.getError(indexMapOut, j);
+                kernel = layerNext.getKernel(indexMapOut, j);
+                s = convFull(mapError, MatrixOperation.rot180(kernel), s);
+            }
+            layer.setErrorMap(indexMapOut, i, s);
         }
+    }
+
+    // Вычисление взвешенной суммы сверточного слоя
+    private Matrix convFull(Matrix matrix, Matrix kernel, Matrix s){
+        int row = matrix.getRowNum() + 2 * (kernel.getRowNum() - 1);
+        int column = matrix.getColNum() + 2 * (kernel.getColNum() - 1);
+        Matrix extend = new Matrix(new Size(row, column));
+
+        for (int i = 0; i < matrix.getRowNum(); i++) {
+            for (int j = 0; j < matrix.getColNum(); j++) {
+                extend.setValue(i + kernel.getRowNum() - 1, j + kernel.getColNum() - 1, matrix.getValue(i,j));
+            }
+        }
+
+        return sum(extend, kernel, s);
     }
 
     // Ошибки выходного слоя
@@ -169,22 +205,21 @@ public class CNN {
         boolean repeat = true;
 
         for (int i = 0; i < lable.length & repeat; i++) {
-            if (Objects.equals(lable[i], 1)){
+            if (Objects.equals(lable[i], 1.0)){
                 lableIndex = i;
                 repeat = false;
             }
         }
 
         int lableIndexNet = 0;
-        repeat = true;
-        for (int i = 0; i < mapsOut.length & repeat; i++) {
-            if (Objects.equals(mapsOut[i], 1)){
+        double max = Double.MIN_VALUE;
+        for (int i = 0; i < mapsOut.length; i++) {
+            if (mapsOut[i] > max){
                 lableIndexNet = i;
-                repeat = false;
+                max = mapsOut[i];
             }
         }
-
-        return lableIndexNet == lableIndex;
+        return Objects.equals(lableIndex, lableIndexNet);
     }
 
     // Обучение всех слоев нейронной сети
@@ -242,7 +277,7 @@ public class CNN {
     // Обучение субдескритизирующего слоя
     private void trainSubLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix sampMatrix = Util.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
+            Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
             layer.setMapOutValue(indexMapOut, i, sampMatrix);
         }
     }
@@ -260,7 +295,7 @@ public class CNN {
     }
 
     // Считаем размер карты исходя из размера ядра обхода изображения
-    // Считаем взвешенную сумму для одной карты (функция активации гиперболический тангенс)
+    // Считаем взвешенную сумму для одной карты (функция активации сигмоидная)
     private Matrix sum(Matrix image, Matrix kernel, Matrix currentSum){
         int row = image.getRowNum() - kernel.getRowNum() + 1;
         int column = image.getColNum() - kernel.getColNum() + 1;
@@ -296,6 +331,64 @@ public class CNN {
             }
         }
         return s;
+    }
+
+    // Обновление значений ядра свертки и пороговых значений
+    // 0-й слой - входной слой, не требующий обновления
+    private void updateTandKernel(){
+        for (int i = 1; i < layers.size(); i++) {
+            Layer layer = layers.get(i);
+            Layer layerPrev = layers.get(i-1);
+
+            if (layer.getType() == Layer.LayerType.CONVOLUTION | layer.getType() == Layer.LayerType.OUTPUT){
+                updateKernel(layer, layerPrev);
+                updateT(layer);
+            }
+        }
+    }
+
+    private void updateKernel(Layer layer, Layer layerPrev){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                Matrix kernelNew = null;
+
+                for (int k = 0; k < this.batchsize; k++) {
+                    kernelNew = sum(layerPrev.getMap(k, j), layer.getError(k, i), kernelNew);
+                }
+
+                Matrix kernel = layer.getKernel(j,i);
+                kernel = MatrixOperation.multiply(kernel, 1 - this.lambda * this.alpha);
+                kernelNew = MatrixOperation.divide(kernelNew, this.batchsize);
+                kernelNew = MatrixOperation.multiply(kernelNew, this.alpha);
+
+                kernelNew = MatrixOperation.operation(kernel, kernelNew, MatrixOperation.Op.SUM);
+                layer.setKernelMatrix(j, i, kernelNew);
+            }
+        }
+    }
+
+    private void updateT(Layer layer){
+        List<List<Matrix>> error  = layer.getError();
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            int row = error.get(i).get(0).getRowNum();
+            int column = error.get(i).get(0).getColNum();
+            Matrix result = new Matrix(new Size(row, column));
+
+            for (int j = 0; j < row; j++) {
+                for (int k = 0; k < column; k++) {
+                    double value = 0;
+
+                    for (List<Matrix> anError : error) {
+                        value += anError.get(i).getValue(j, k);
+                    }
+                    result.setValue(j, k, value);
+                }
+            }
+
+            double newValueT = MatrixOperation.sumAllCells(result) / this.batchsize;
+            newValueT = layer.getT(i) + this.alpha * newValueT;
+            layer.setTValue(i, newValueT);
+        }
     }
 
     private Precision getPrecision(){

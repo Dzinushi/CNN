@@ -1,9 +1,8 @@
 package net;
 
 import util.Matrix;
+import util.MatrixOperation;
 import util.Size;
-import util.Util;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +64,7 @@ public class Layer {
     }
 
     // Задаем размерность ядра свертки
-    public void setKernel(int mapOutNumber){
+    public void setKernelSize(int mapOutNumber){
         kernel = new ArrayList<>();
 
         for (int i = 0; i < mapOutNumber; i++) {
@@ -78,6 +77,10 @@ public class Layer {
         }
 
         setKernelRandomValue();
+    }
+
+    public void setKernelMatrix(final int mapOutIndex,final int index, final Matrix matrix){
+        kernel.get(mapOutIndex).set(index, matrix);
     }
 
     public void setOutKernel(int mapOutNumber, Size kernelSize){
@@ -99,7 +102,7 @@ public class Layer {
     private void setKernelRandomValue(){
         for (List<Matrix> aKernel : kernel) {
             for (int j = 0; j < getMapOutNumber(); j++) {
-                aKernel.set(j, Util.randomMapCNN(kernelSize));
+                aKernel.set(j, MatrixOperation.randomMapCNN(kernelSize));
             }
         }
     }
@@ -186,6 +189,10 @@ public class Layer {
 
     public Matrix getError(int indexMapOut, int index){
         return error.get(indexMapOut).get(index);
+    }
+
+    public List<List<Matrix>> getError(){
+        return error;
     }
 
     public Size getMapsSize(){

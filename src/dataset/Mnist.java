@@ -60,8 +60,12 @@ public class Mnist {
             System.exit(0);
         }
 
+        System.out.println("Start read Data Base ...");
+        int imageForRead = number > 0 ? number : numImages;
+        System.out.printf("All datas: %d\n", imageForRead);
+
         size = 0;
-        for (int i = 0; i < number && lableFile.available() > 0; i++) {
+        for (int i = 0; i < imageForRead && lableFile.available() > 0; i++) {
             for (int rowIdx = 0, index = 0; rowIdx < numRows; rowIdx++) {
                 for (int colIdx = 0; colIdx < numCols; colIdx++, index++) {
                     datas[i][index] = imageFile.readUnsignedByte();
@@ -72,12 +76,16 @@ public class Mnist {
             size++;
         }
 
+        System.out.println("End read data");
+
         normalizeData();
     }
 
     private void normalizeData(){
+        System.out.println("Start normalize data ...");
         double max = Util.max(datas);
         datas = Util.normalize(datas, max);
+        System.out.println("End normalize data");
     }
 
     public double[] getData(int index){

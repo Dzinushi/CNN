@@ -2,9 +2,7 @@ import dataset.Mnist;
 import net.CNN;
 import net.Layer;
 import net.CreateLayer;
-import util.Matrix;
 import util.Size;
-import util.Util;
 
 import java.io.IOException;
 
@@ -22,10 +20,10 @@ public class Test {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String lablesTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, lablesTrain, 100);
+        trainData.load(imagesTrain, lablesTrain, 500);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize = 50
-        cnn.train(trainData, 1);    // iterations = 1
+        cnn.train(trainData, 2);    // iterations = 1
     }
 }

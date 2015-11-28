@@ -10,12 +10,14 @@ public class Precision {
 
     public void increase() {
         ++this.value;
-        ++this.count;
     }
 
-    public void clear(){
+    public void setCount(int count){
+        this.count = count;
+    }
+
+    public void resetValue(){
         this.value = 0;
-        this.count = 0;
     }
 
     public int getValue() {
