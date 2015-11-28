@@ -158,6 +158,26 @@ public class Layer {
     }
 
     public void setMapOutValue(int indexMapOut, int index, int i, int j, double value){
+        if (indexMapOut >= mapOut.size()){
+            System.out.printf("Ошибка. Индекс изображения превышает размер списка изображений (%d >= %d)", indexMapOut, mapOut.size());
+            System.exit(-1);
+        }
+
+        if (index >= mapOut.get(indexMapOut).size()){
+            System.out.printf("Ошибка. Индекс карты превышает размер списка карт (%d >= %d)", index, mapOut.get(indexMapOut).size());
+            System.exit(-1);
+        }
+
+        if (i >= mapOut.get(indexMapOut).get(index).getRowNum()){
+            System.out.printf("Ошибка. Индекс строки карты больше размера строк карты (%d >= %d)", i, mapOut.get(indexMapOut).get(index).getRowNum());
+            System.exit(-1);
+        }
+
+        if (j >= mapOut.get(indexMapOut).get(index).getColNum()){
+            System.out.printf("Ошибка. Индекс столбца карты больше размера столбца карты (%d >= %d)", j, mapOut.get(indexMapOut).get(index).getColNum());
+            System.exit(-1);
+        }
+
         List<Matrix> matrixes = mapOut.get(indexMapOut);
         Matrix matrix = matrixes.get(index);
         matrix.setValue(i,j, value);
@@ -180,6 +200,15 @@ public class Layer {
     }
 
     public Matrix getKernel(int indexMapOut, int index){
+        if (indexMapOut >= kernel.size()){
+            System.out.printf("Ошибка. Индекс изображения превышает размер списка изображений (%d >= %d)", indexMapOut, kernel.size());
+            System.exit(-1);
+        }
+
+        if (index >= kernel.get(indexMapOut).size()){
+            System.out.printf("Ошибка. Индекс ядра превышает размер списка карт (%d >= %d)", index, kernel.get(indexMapOut).size());
+            System.exit(-1);
+        }
         return kernel.get(indexMapOut).get(index);
     }
 

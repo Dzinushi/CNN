@@ -20,10 +20,10 @@ public class Test {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String lablesTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, lablesTrain, 500);
+        trainData.load(imagesTrain, lablesTrain, 100);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize = 50
-        cnn.train(trainData, 2);    // iterations = 1
+        cnn.train(trainData, 20);    // iterations = 1
     }
 }

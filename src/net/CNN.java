@@ -15,6 +15,7 @@ public class CNN {
     private Precision precision;
     private double lambda;
     private double alpha;
+    private StopTrain stop;
 
     // Задано константное значение alpha
     public CNN(){
@@ -23,6 +24,7 @@ public class CNN {
         alpha = 0.5;
         layers = new ArrayList<>();
         precision = new Precision();
+        stop = new StopTrain();
     }
 
     // Инициирование параметров сети
@@ -30,7 +32,11 @@ public class CNN {
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
 
-        for (int i = 0; i < this.layers.size(); i++) {
+        // Запус функции отлавливающей нажатие ' ' и прерывающей обучение
+        Thread thread = new Thread(stop);
+        thread.start();
+
+        for (int i = 0; i < this.layers.size() & stop.isEnd(); i++) {
 
             Layer inputLayer = null, layer;
             if (!Objects.equals(i,0)) {
@@ -74,6 +80,8 @@ public class CNN {
     *  Производим последовательное обучение каждого слоя, подавая изображения в случайном порядке.
     * */
     public void train(Mnist mnist, int iteration){
+        TimeCNN timeCNN = new TimeCNN();
+        timeCNN.start();
         int numbatches = mnist.getSize() / batchsize;
         this.precision.setCount(mnist.getSize());
 
@@ -87,8 +95,8 @@ public class CNN {
                     double[] lable = mnist.getLable(index);
                     Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
 
-                    trainAllLayers(image, lable, imageSize, j);
-                    boolean right = backPropagation(lable, j);
+                    trainAllLayers(image, lable, imageSize, k);
+                    boolean right = backPropagation(lable, k);
 
                     if (right){
                         precision.increase();
@@ -97,9 +105,12 @@ public class CNN {
 
                 updateTandKernel();
             }
-            LogCNN.printPrecision(getPrecision());
+
+            LogCNN.printInfo(i+1, getPrecision(), timeCNN.getTimeLast());
+            timeCNN.start();
             precision.resetValue();
         }
+        LogCNN.printAllTime(timeCNN.getTimeAll());
     }
 
 
@@ -159,7 +170,7 @@ public class CNN {
             Matrix mapError, kernel, s = null;
             for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
                 mapError = layerNext.getError(indexMapOut, j);
-                kernel = layerNext.getKernel(indexMapOut, j);
+                kernel = layerNext.getKernel(i, j);
                 s = convFull(mapError, MatrixOperation.rot180(kernel), s);
             }
             layer.setErrorMap(indexMapOut, i, s);
