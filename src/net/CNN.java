@@ -32,11 +32,7 @@ public class CNN {
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
 
-        // Запус функции отлавливающей нажатие ' ' и прерывающей обучение
-        Thread thread = new Thread(stop);
-        thread.start();
-
-        for (int i = 0; i < this.layers.size() & stop.isEnd(); i++) {
+        for (int i = 0; i < this.layers.size(); i++) {
 
             Layer inputLayer = null, layer;
             if (!Objects.equals(i,0)) {
@@ -85,7 +81,11 @@ public class CNN {
         int numbatches = mnist.getSize() / batchsize;
         this.precision.setCount(mnist.getSize());
 
-        for (int i = 0; i < iteration; i++) {
+        // Запус функции отлавливающей нажатие ' ' и прерывающей обучение
+        Thread thread = new Thread(stop);
+        thread.start();
+
+        for (int i = 0; i < iteration & !this.stop.isEnd(); i++) {
             int[] randIndexes = Util.randPerm(mnist.getSize());
 
             for (int j = 0; j < numbatches; j++) {

@@ -1,10 +1,9 @@
 package net;
 
-import java.util.Objects;
 import java.util.Scanner;
 
 public class StopTrain implements Runnable{
-    private boolean end;
+    private volatile boolean end;
 
     public StopTrain(){
         end = false;
@@ -13,12 +12,10 @@ public class StopTrain implements Runnable{
     @Override
     public void run() {
         Scanner sc = new Scanner(System.in);
-        boolean repeat = true;
-        while (repeat){
-            byte sml = sc.nextByte();
-            System.out.println("pressed");
-            if (Objects.equals(sml, ' ')){
-                repeat = false;
+        while (!isEnd())
+        {
+            String result = sc.nextLine();
+            if (result.equals("")){
                 end = true;
             }
         }
