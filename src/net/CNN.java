@@ -102,7 +102,7 @@ public class CNN {
                     }
                 }
 
-                updateTandKernel();
+                update();
             }
 
             LogCNN.printInfo(i+1, getPrecision(), timeCNN.getTimeLast());
@@ -259,7 +259,7 @@ public class CNN {
     }
 
     private void calcConvErrors(final Layer layer, final Layer layerNext, int indexMapOut){
-        Matrix mapError, map, s, increaseMap;
+        Matrix mapError, map, s, extendMap;
 
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             mapError = layerNext.getError(indexMapOut, i);
@@ -268,8 +268,8 @@ public class CNN {
             mapClone = MatrixOperation.valMinus(mapClone, 1.0);
             s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
 
-            increaseMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
-            s = MatrixOperation.operation(s, increaseMap, MatrixOperation.Op.MULTIPLY);
+            extendMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
+            s = MatrixOperation.operation(s, extendMap, MatrixOperation.Op.MULTIPLY);
 
             layer.setErrorMap(indexMapOut, i, s);
         }
@@ -282,14 +282,14 @@ public class CNN {
             for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
                 mapError = layerNext.getError(indexMapOut, j);
                 kernel = layerNext.getKernel(i, j);
-                s = convFull(mapError, MatrixOperation.rot180(kernel), s);
+                s = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel), s);
             }
             layer.setErrorMap(indexMapOut, i, s);
         }
     }
 
     // Вычисление взвешенной суммы сверточного слоя
-    private Matrix convFull(final Matrix matrix, final Matrix kernel, final Matrix s){
+    private Matrix calcMatrixConvError(final Matrix matrix, final Matrix kernel, final Matrix s){
         int row = matrix.getRowNum() + 2 * (kernel.getRowNum() - 1);
         int column = matrix.getColNum() + 2 * (kernel.getColNum() - 1);
         Matrix extend = new Matrix(new Size(row, column));
@@ -306,23 +306,23 @@ public class CNN {
     // Ошибки выходного слоя
     private boolean calcOutErrors(double[] lable, int indexMapOut){
         Layer outLayer = layers.get(layers.size() - 1); // выходной слой
-        double[] mapsOut = new double[outLayer.getMapOutNumber()];
+        double[] answer = new double[outLayer.getMapOutNumber()];
 
-        for (int i = 0; i < mapsOut.length; i++) {
+        for (int i = 0; i < answer.length; i++) {
             Matrix mapOut = outLayer.getMap(indexMapOut, i);
-            mapsOut[i] = mapOut.getValue(0,0);
+            answer[i] = mapOut.getValue(0,0);
         }
 
         int mapSize = outLayer.getMapOutNumber();
         for (int i = 0; i < mapSize; i++) {
-            double value = mapsOut[i] * (1 - mapsOut[i]) * (lable[i] - mapsOut[i]);
+            double value = answer[i] * (1 - answer[i]) * (lable[i] - answer[i]);
             outLayer.setErrorValue(indexMapOut, i, 0, 0, value);
         }
 
-        return isRightLable(mapsOut, lable);
+        return isRightLable(answer, lable);
     }
 
-    private boolean isRightLable(double[] mapsOut, double[] lable){
+    private boolean isRightLable(double[] answer, double[] lable){
         int lableIndex = 0;
         boolean repeat = true;
 
@@ -333,20 +333,20 @@ public class CNN {
             }
         }
 
-        int lableIndexNet = 0;
+        int answerIndex = 0;
         double max = Double.MIN_VALUE;
-        for (int i = 0; i < mapsOut.length; i++) {
-            if (mapsOut[i] > max){
-                lableIndexNet = i;
-                max = mapsOut[i];
+        for (int i = 0; i < answer.length; i++) {
+            if (answer[i] > max){
+                answerIndex = i;
+                max = answer[i];
             }
         }
-        return Objects.equals(lableIndex, lableIndexNet);
+        return Objects.equals(lableIndex, answerIndex);
     }
 
     // Обновление значений ядра свертки и пороговых значений
     // 0-й слой - входной слой, не требующий обновления
-    private void updateTandKernel(){
+    private void update(){
         for (int i = 1; i < layers.size(); i++) {
             Layer layer = layers.get(i);
             Layer layerPrev = layers.get(i-1);
