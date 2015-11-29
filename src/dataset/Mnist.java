@@ -2,10 +2,9 @@ package dataset;
 
 import util.Util;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
+import java.util.Objects;
 
 
 public class Mnist {
@@ -47,8 +46,8 @@ public class Mnist {
         int numRows = imageFile.readInt();
         int numCols = imageFile.readInt();
 
-        lable = new double[numLabels][10];
-        datas = new double[numImages][numRows * numCols];
+        lable = new double[number][10];
+        datas = new double[number][numRows * numCols];
 
         imageWidth = numCols;
         imageHeight = numRows;
@@ -79,6 +78,7 @@ public class Mnist {
         System.out.println("End read data");
 
         normalizeData();
+        //saveFormatData("train");
     }
 
     private void normalizeData(){
@@ -86,6 +86,36 @@ public class Mnist {
         double max = Util.max(datas);
         datas = Util.normalize(datas, max);
         System.out.println("End normalize data");
+    }
+
+    public void saveFormatData(String filename){
+        PrintWriter printWriter = null;
+
+        try {
+            printWriter = new PrintWriter(filename + ".format", "UTF-8");
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        assert printWriter != null;
+
+        for (int i = 0; i < datas.length; i++) {
+            for (int j = 0; j < datas[i].length; j++) {
+                printWriter.print(datas[i][j] + ",");
+            }
+            int lable = 0;
+            boolean repeat = true;
+            for (int j = 0; j < this.lable[i].length & repeat; j++) {
+                if (Objects.equals(this.lable[i][j], 1.0)){
+                    lable = j;
+                    repeat = false;
+                }
+            }
+
+            printWriter.print(lable + "\n");
+        }
+
+        printWriter.close();
     }
 
     public double[] getData(int index){

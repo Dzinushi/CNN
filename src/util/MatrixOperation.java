@@ -46,6 +46,7 @@ public class MatrixOperation {
         return matrix;
     }
 
+
     public static Matrix compression(final Matrix map, Size size){
         int modWidth = Math.floorMod(map.getRowNum(), size.x);
         int modHeight = Math.floorMod(map.getColNum(), size.y);
