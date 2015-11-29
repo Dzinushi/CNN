@@ -2,7 +2,6 @@ import dataset.Mnist;
 import net.CNN;
 import net.Layer;
 import net.CreateLayer;
-import net.StopTrain;
 import util.Size;
 
 import java.io.IOException;
@@ -21,14 +20,12 @@ public class Test {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String lablesTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, lablesTrain, 100);
+        trainData.load(imagesTrain, lablesTrain, 1000);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize = 50
-        cnn.train(trainData, 20);    // iterations = 1
+        cnn.train(trainData, 5);    // iterations = 1
 
-//        StopTrain stopTrain = new StopTrain();
-//        Thread thread = new Thread(stopTrain);
-//        thread.start();
+        System.exit(0);
     }
 }

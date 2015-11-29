@@ -79,11 +79,11 @@ public class Layer {
         setKernelRandomValue();
     }
 
-    public void setKernelMatrix(final int mapOutIndex,final int index, final Matrix matrix){
+    public void setKernelMatrix(final int mapOutIndex, final int index, final Matrix matrix){
         kernel.get(mapOutIndex).set(index, matrix);
     }
 
-    public void setOutKernel(int mapOutNumber, Size kernelSize){
+    public void setOutKernel(final int mapOutNumber, final Size kernelSize){
         this.kernelSize = kernelSize;
         kernel = new ArrayList<>();
 
@@ -118,7 +118,7 @@ public class Layer {
     }
 
     // Задаем размерность ошибок
-    public void setErrorSize(int batchsize){
+    public void setErrorSize(final int batchsize){
         error = new ArrayList<>(batchsize);
         for (int i = 0; i < batchsize; i++) {
             List<Matrix> matrixes = new ArrayList<>();
@@ -136,7 +136,7 @@ public class Layer {
         map.setValue(i, j, value);
     }
 
-    public void setErrorMap(int indexMapOut, int index, Matrix map){
+    public void setErrorMap(int indexMapOut, int index, final Matrix map){
         error.get(indexMapOut).set(index, map);
     }
 
@@ -183,7 +183,7 @@ public class Layer {
         matrix.setValue(i,j, value);
     }
 
-    public void setMapOutValue(int indexMapOut, int index, Matrix matrix){
+    public void setMapOutValue(int indexMapOut, int index, final Matrix matrix){
         mapOut.get(indexMapOut).set(index, matrix);
     }
 

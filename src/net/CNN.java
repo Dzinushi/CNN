@@ -3,7 +3,6 @@ package net;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import dataset.Mnist;
 import util.*;
 
@@ -81,7 +80,7 @@ public class CNN {
         int numbatches = mnist.getSize() / batchsize;
         this.precision.setCount(mnist.getSize());
 
-        // Запус функции отлавливающей нажатие ' ' и прерывающей обучение
+        // Запус функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
         Thread thread = new Thread(stop);
         thread.start();
 
@@ -110,10 +109,120 @@ public class CNN {
             timeCNN.start();
             precision.resetValue();
         }
+
         LogCNN.printAllTime(timeCNN.getTimeAll());
     }
 
+    // Обучение всех слоев нейронной сети
+    private void trainAllLayers(double[] data, double[] lable, Size imageSize, int indexMapOut){
+        for (int i = 0; i < layers.size(); i++) {
 
+            Layer layer = null, layerPrev = null;
+            if (!Objects.equals(i, 0)){
+                layer = layers.get(i);
+                layerPrev = layers.get(i - 1);
+            }
+
+            switch (layers.get(i).getType()){
+                case INPUT:
+                    trainInputLayer(data, imageSize, indexMapOut);
+                    break;
+
+                case CONVOLUTION:
+                    trainConvLayer(layer, layerPrev, indexMapOut);
+                    break;
+
+                case SUBSAMPLING:
+                    trainSubLayer(layer, layerPrev, indexMapOut);
+                    break;
+
+                case OUTPUT:
+                    trainOutLayer(layer, layerPrev, indexMapOut);
+                    break;
+            }
+        }
+    }
+
+    // Задание изображения на входной слой (всего может быть batchsize изображений на входном слое)
+    private void trainInputLayer(double[] data, Size imageSize, int indexMapOut){
+        Layer layer = layers.get(0);
+        for (int i = 0; i < imageSize.x; i++) {
+            for (int j = 0; j < imageSize.y; j++) {
+                layer.setMapOutValue(indexMapOut, 0, i, j, data[layer.getMapsSize().x * i + j]);
+            }
+        }
+    }
+
+    // Обучение сверточного слоя
+    private void trainConvLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            Matrix s = null;
+            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
+            }
+            s = activation(s, layer.getT(i));
+            layer.setMapOutValue(indexMapOut, i, s);
+        }
+    }
+
+    // Обучение субдескритизирующего слоя
+    private void trainSubLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
+            layer.setMapOutValue(indexMapOut, i, sampMatrix);
+        }
+    }
+
+    // Обучение выходного слоя
+    private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            Matrix s = null;
+            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
+            }
+            s = activation(s, layer.getT(i));
+            layer.setMapOutValue(indexMapOut, i, s);
+        }
+    }
+
+    // Считаем размер карты исходя из размера ядра обхода изображения
+    // Считаем взвешенную сумму для одной карты (функция активации сигмоидная)
+    private Matrix sum(final Matrix image, final Matrix kernel, final Matrix currentSum){
+        int row = image.getRowNum() - kernel.getRowNum() + 1;
+        int column = image.getColNum() - kernel.getColNum() + 1;
+        Matrix result = new Matrix(new Size(row, column));
+
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < column; j++) {
+                double value = 0;
+                for (int k = 0; k < kernel.getRowNum(); k++) {
+                    for (int l = 0; l < kernel.getColNum(); l++) {
+                        value += image.getValue(i+k, j+l) * kernel.getValue(k,l);
+                    }
+                }
+
+                if (currentSum != null){
+                    value += currentSum.getValue(i,j);
+                    result.setValue(i, j, value);
+                }
+                else{
+                    result.setValue(i, j, value);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Рассчет функции активации для взвешенной суммы
+    private Matrix activation(final Matrix s, double tValue){
+        for (int i = 0; i < s.getRowNum(); i++) {
+            for (int j = 0; j < s.getColNum(); j++) {
+                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j)) + tValue);
+            }
+        }
+        return s;
+    }
 
     // Метод распостранения ошибки сети
     // Дописать рассчет ошибок выходного и скрытого слоев
@@ -149,13 +258,15 @@ public class CNN {
         return isRight;
     }
 
-    private void calcConvErrors(Layer layer, Layer layerNext, int indexMapOut){
+    private void calcConvErrors(final Layer layer, final Layer layerNext, int indexMapOut){
         Matrix mapError, map, s, increaseMap;
 
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             mapError = layerNext.getError(indexMapOut, i);
             map = layer.getMap(indexMapOut, i);
-            s = MatrixOperation.operation(map, map, MatrixOperation.Op.MULTIPLY);
+            Matrix mapClone = MatrixOperation.clone(map);
+            mapClone = MatrixOperation.valMinus(mapClone, 1.0);
+            s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
 
             increaseMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
             s = MatrixOperation.operation(s, increaseMap, MatrixOperation.Op.MULTIPLY);
@@ -165,7 +276,7 @@ public class CNN {
     }
 
     // Вычисление ошибки субдескритизирующего слоя
-    private void calcSubErrors(Layer layer, Layer layerNext, int indexMapOut){
+    private void calcSubErrors(final Layer layer, final Layer layerNext, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix mapError, kernel, s = null;
             for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
@@ -178,7 +289,7 @@ public class CNN {
     }
 
     // Вычисление взвешенной суммы сверточного слоя
-    private Matrix convFull(Matrix matrix, Matrix kernel, Matrix s){
+    private Matrix convFull(final Matrix matrix, final Matrix kernel, final Matrix s){
         int row = matrix.getRowNum() + 2 * (kernel.getRowNum() - 1);
         int column = matrix.getColNum() + 2 * (kernel.getColNum() - 1);
         Matrix extend = new Matrix(new Size(row, column));
@@ -233,117 +344,6 @@ public class CNN {
         return Objects.equals(lableIndex, lableIndexNet);
     }
 
-    // Обучение всех слоев нейронной сети
-    private void trainAllLayers(double[] data, double[] lable, Size imageSize, int indexMapOut){
-        for (int i = 0; i < layers.size(); i++) {
-
-            Layer layer = null, layerPrev = null;
-            if (!Objects.equals(i, 0)){
-                layer = layers.get(i);
-                layerPrev = layers.get(i - 1);
-            }
-
-            switch (layers.get(i).getType()){
-                case INPUT:
-                    trainInputLayer(data, imageSize, indexMapOut);
-                    break;
-
-                case CONVOLUTION:
-                    trainConvLayer(layer, layerPrev, indexMapOut);
-                    break;
-
-                case SUBSAMPLING:
-                    trainSubLayer(layer, layerPrev, indexMapOut);
-                    break;
-
-                case OUTPUT:
-                    trainOutLayer(layer, layerPrev, indexMapOut);
-                    break;
-            }
-        }
-    }
-
-    // Задание изображения на входной слой (всего может быть batchsize изображений на входном слое)
-    private void trainInputLayer(double[] data, Size imageSize, int indexMapOut){
-        Layer layer = layers.get(0);
-        for (int i = 0; i < imageSize.x; i++) {
-            for (int j = 0; j < imageSize.y; j++) {
-                layer.setMapOutValue(indexMapOut, 0, i, j, data[layer.getMapsSize().x * i + j]);
-            }
-        }
-    }
-
-    // Обучение сверточного слоя
-    private void trainConvLayer(Layer layer, Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix s = null;
-            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
-            }
-            s = activation(s, layer.getT(i));
-            layer.setMapOutValue(indexMapOut, i, s);
-        }
-    }
-
-    // Обучение субдескритизирующего слоя
-    private void trainSubLayer(Layer layer, Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
-            layer.setMapOutValue(indexMapOut, i, sampMatrix);
-        }
-    }
-
-    // Обучение выходного слоя
-    private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix s = null;
-            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i), s);
-            }
-            s = activation(s, layer.getT(i));
-            layer.setMapOutValue(indexMapOut, i, s);
-        }
-    }
-
-    // Считаем размер карты исходя из размера ядра обхода изображения
-    // Считаем взвешенную сумму для одной карты (функция активации сигмоидная)
-    private Matrix sum(Matrix image, Matrix kernel, Matrix currentSum){
-        int row = image.getRowNum() - kernel.getRowNum() + 1;
-        int column = image.getColNum() - kernel.getColNum() + 1;
-        Matrix result = new Matrix(new Size(row, column));
-
-        for (int i = 0; i < row; i++) {
-            for (int j = 0; j < column; j++) {
-                double value = 0;
-                for (int k = 0; k < kernel.getRowNum(); k++) {
-                    for (int l = 0; l < kernel.getColNum(); l++) {
-                        value += image.getValue(i+k, j+l) * kernel.getValue(k,l);
-                    }
-                }
-
-                if (currentSum != null){
-                    value += currentSum.getValue(i,j);
-                    result.setValue(i, j, value);
-                }
-                else{
-                    result.setValue(i, j, value);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    // Рассчет функции активации для взвешенной суммы
-    private Matrix activation(Matrix s, double tValue){
-        for (int i = 0; i < s.getRowNum(); i++) {
-            for (int j = 0; j < s.getColNum(); j++) {
-                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j)) + tValue);
-            }
-        }
-        return s;
-    }
-
     // Обновление значений ядра свертки и пороговых значений
     // 0-й слой - входной слой, не требующий обновления
     private void updateTandKernel(){
@@ -358,7 +358,7 @@ public class CNN {
         }
     }
 
-    private void updateKernel(Layer layer, Layer layerPrev){
+    private void updateKernel(final Layer layer, final Layer layerPrev){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
                 Matrix kernelNew = null;
@@ -378,7 +378,7 @@ public class CNN {
         }
     }
 
-    private void updateT(Layer layer){
+    private void updateT(final Layer layer){
         List<List<Matrix>> error  = layer.getError();
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             int row = error.get(i).get(0).getRowNum();

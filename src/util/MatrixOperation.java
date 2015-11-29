@@ -46,7 +46,7 @@ public class MatrixOperation {
         return matrix;
     }
 
-    public static Matrix compression(Matrix map, Size size){
+    public static Matrix compression(final Matrix map, Size size){
         int modWidth = Math.floorMod(map.getRowNum(), size.x);
         int modHeight = Math.floorMod(map.getColNum(), size.y);
 
@@ -77,25 +77,22 @@ public class MatrixOperation {
         return mapCompressed;
     }
 
-    public static Matrix extend(Matrix map, Size size){
+    public static Matrix extend(final Matrix map, Size size){
         int row = map.getRowNum();
         int column = map.getColNum();
-        Matrix mapIncreased = new Matrix(new Size(row * size.x, column * size.y));
+        Matrix mapExtend = new Matrix(new Size(row * size.x, column * size.y));
 
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < column; j++) {
-
-                double max = Double.MIN_VALUE;
-
                 for (int k = i * size.x; k < i * size.x + size.x; k++) {
                     for (int l = j * size.y; l < j * size.y + size.y; l++) {
-                        mapIncreased.setValue(k, l, map.getValue(i,j));
+                        mapExtend.setValue(k, l, map.getValue(i,j));
                     }
                 }
             }
         }
 
-        return mapIncreased;
+        return mapExtend;
     }
 
     public static Matrix randomMapCNN(Size size){
@@ -113,7 +110,7 @@ public class MatrixOperation {
         MULTIPLY
     }
 
-    public static Matrix operation(Matrix first, Matrix second, Op operation){
+    public static Matrix operation(final Matrix first, final Matrix second, Op operation){
         if (!Objects.equals(first.getRowNum(), second.getRowNum()) | !Objects.equals(first.getColNum(), second.getColNum())){
             System.out.printf("Ошибка. Попытка сложения карт разного размера: [%d;%d] и [%d;%d]\n",
                     first.getRowNum(),
@@ -132,7 +129,7 @@ public class MatrixOperation {
                     sum.setValue(i, j, value);
                 }
                 else if (operation == Op.MULTIPLY){
-                    double value = (1 - first.getValue(i,j)) * second.getValue(i,j);
+                    double value = first.getValue(i,j) * second.getValue(i,j);
                     sum.setValue(i, j, value);
                 }
             }
@@ -141,7 +138,7 @@ public class MatrixOperation {
         return sum;
     }
 
-    public static double sumAllCells(Matrix matrix){
+    public static double sumAllCells(final Matrix matrix){
         double result = 0;
         for (int i = 0; i < matrix.getRowNum(); i++) {
             for (int j = 0; j < matrix.getColNum(); j++) {
@@ -150,5 +147,28 @@ public class MatrixOperation {
         }
 
         return result;
+    }
+
+    public static Matrix clone(final Matrix matrix){
+        Matrix cloneMatrix = new Matrix(new Size(matrix.getRowNum(), matrix.getColNum()));
+        for (int i = 0; i < matrix.getRowNum(); i++) {
+            for (int j = 0; j < matrix.getColNum(); j++) {
+                cloneMatrix.setValue(i, j, matrix.getValue(i,j));
+            }
+        }
+
+        return cloneMatrix;
+    }
+
+    // Запись в каждую ячейку значения "value - matrix[i][j]"
+    public static Matrix valMinus(final Matrix matrix, double value){
+        Matrix newMatrix = new Matrix(new Size(matrix.getRowNum(), matrix.getColNum()));
+        for (int i = 0; i < newMatrix.getRowNum(); i++) {
+            for (int j = 0; j < newMatrix.getColNum(); j++) {
+                newMatrix.setValue(i, j, value - matrix.getValue(i, j));
+            }
+        }
+
+        return newMatrix;
     }
 }

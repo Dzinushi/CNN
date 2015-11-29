@@ -7,11 +7,11 @@ public class Matrix {
         data = new double[size.x][size.y];
     }
 
-    public void setValue(int indexRow, int indexCol, double value){
+    public void setValue(final int indexRow, final int indexCol, final double value){
         data[indexRow][indexCol] = value;
     }
 
-    public double getValue(int indexRow, int indexColumn){
+    public double getValue(final int indexRow,final int indexColumn){
         return data[indexRow][indexColumn];
     }
 
