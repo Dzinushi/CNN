@@ -12,7 +12,6 @@ public class Layer {
     private Size mapsSize;
     private Size kernelSize;
     private Size compressSise;
-    private int classNum = -1;
 
     private List<List<Matrix>> kernel;  // ядра свертки
     private List<List<Matrix>> error;   // ошибки карт
@@ -52,7 +51,6 @@ public class Layer {
     // Создание выходного слоя
     public static Layer outputLayer(int classNum) {
         Layer layer = new Layer();
-        layer.classNum = classNum;
         layer.type = LayerType.OUTPUT;
         layer.mapsSize = new Size(1, 1);
         layer.mapOutNumber = classNum;
@@ -234,9 +232,5 @@ public class Layer {
 
     public Size getCompressSise(){
         return compressSise;
-    }
-
-    public int getClassNum(){
-        return classNum;
     }
 }

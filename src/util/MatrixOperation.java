@@ -46,7 +46,6 @@ public class MatrixOperation {
         return matrix;
     }
 
-
     public static Matrix compression(final Matrix map, Size size){
         int modWidth = Math.floorMod(map.getRowNum(), size.x);
         int modHeight = Math.floorMod(map.getColNum(), size.y);
@@ -72,6 +71,15 @@ public class MatrixOperation {
                 }
 
                 mapCompressed.setValue(i, j, max);
+
+//                double sum = 0;
+//                for (int k = i * size.x; k < i * size.x + size.x; k++) {
+//                    for (int l = j * size.y; l < j * size.y + size.y; l++) {
+//                        sum += map.getValue(i,j);
+//                    }
+//                }
+//
+//                mapCompressed.setValue(i, j, sum / (size.x * size.y));
             }
         }
 

@@ -84,6 +84,8 @@ public class CNN {
         Thread thread = new Thread(stop);
         thread.start();
 
+        System.out.printf("\nStart training\n");
+
         for (int i = 0; i < iteration & !this.stop.isEnd(); i++) {
             int[] randIndexes = Util.randPerm(mnist.getSize());
 
@@ -94,7 +96,7 @@ public class CNN {
                     double[] lable = mnist.getLable(index);
                     Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
 
-                    trainAllLayers(image, lable, imageSize, k);
+                    trainAllLayers(image, imageSize, k);
                     boolean right = backPropagation(lable, k);
 
                     if (right){
@@ -105,7 +107,7 @@ public class CNN {
                 update();
             }
 
-            LogCNN.printInfo(i+1, getPrecision(), timeCNN.getTimeLast());
+            LogCNN.printInfo(getPrecision(), timeCNN.getTimeLast());
             timeCNN.start();
             precision.resetValue();
         }
@@ -114,7 +116,7 @@ public class CNN {
     }
 
     // Обучение всех слоев нейронной сети
-    private void trainAllLayers(double[] data, double[] lable, Size imageSize, int indexMapOut){
+    private void trainAllLayers(double[] data, Size imageSize, int indexMapOut){
         for (int i = 0; i < layers.size(); i++) {
 
             Layer layer = null, layerPrev = null;
