@@ -4,6 +4,8 @@ import java.util.*;
 
 public class Util {
 
+    public static Random random = new Random(2);
+
     public static double max(final double[][] data){
         double max = Integer.MIN_VALUE;
 
@@ -27,31 +29,41 @@ public class Util {
         return data;
     }
 
-    public static int[] randPerm(int number){
-        Map<Integer, Boolean> uniqueIndex = new HashMap<>();
-        int[] randpermData = new int[number];
+    public static int[] randPerm(int size, int number){
+//        Map<Integer, Boolean> uniqueIndex = new HashMap<>();
+//        int[] randpermData = new int[number];
+//
+//        for (int i = 0; i < number; i++) {
+//            int index = (int) (Math.random() * number);
+//
+//            if (!uniqueIndex.containsKey(index)){
+//                uniqueIndex.put(index, true);
+//                randpermData[i] = index;
+//            }
+//            else {
+//                boolean repeat = true;
+//                for (int j = 0; j < number & repeat; j++) {
+//                    index = (index + 1) % number;
+//
+//                    if (!uniqueIndex.containsKey(index)) {
+//                        uniqueIndex.put(index, true);
+//                        randpermData[i] = index;
+//                        repeat = false;
+//                    }
+//                }
+//            }
+//        }
+//
+//        return randpermData;
 
-        for (int i = 0; i < number; i++) {
-            int index = (int) (Math.random() * number);
-
-            if (!uniqueIndex.containsKey(index)){
-                uniqueIndex.put(index, true);
-                randpermData[i] = index;
-            }
-            else {
-                boolean repeat = true;
-                for (int j = 0; j < number & repeat; j++) {
-                    index = (index + 1) % number;
-
-                    if (!uniqueIndex.containsKey(index)) {
-                        uniqueIndex.put(index, true);
-                        randpermData[i] = index;
-                        repeat = false;
-                    }
-                }
-            }
+        Set<Integer> set = new HashSet<>();
+        while (set.size() < number) {
+            set.add(random.nextInt(size));
         }
-
-        return randpermData;
+        int[] randPerm = new int[number];
+        int i = 0;
+        for (Integer value : set)
+            randPerm[i++] = value;
+        return randPerm;
     }
 }

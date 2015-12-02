@@ -1,5 +1,7 @@
 package util;
 
+import net.Layer;
+
 import java.util.Objects;
 
 public class MatrixOperation {
@@ -62,24 +64,24 @@ public class MatrixOperation {
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < column; j++) {
 
-                double max = Double.MIN_VALUE;
-
-                for (int k = i * size.x; k < i * size.x + size.x; k++) {
-                    for (int l = j * size.y; l < j * size.y + size.y; l++) {
-                        if (map.getValue(k,l) > max)    max = map.getValue(i,j);
-                    }
-                }
-
-                mapCompressed.setValue(i, j, max);
-
-//                double sum = 0;
+//                double max = Double.MIN_VALUE;
+//
 //                for (int k = i * size.x; k < i * size.x + size.x; k++) {
 //                    for (int l = j * size.y; l < j * size.y + size.y; l++) {
-//                        sum += map.getValue(i,j);
+//                        if (map.getValue(k,l) > max)    max = map.getValue(i,j);
 //                    }
 //                }
 //
-//                mapCompressed.setValue(i, j, sum / (size.x * size.y));
+//                mapCompressed.setValue(i, j, max);
+
+                double sum = 0.0;
+                for (int k = i * size.x; k < (i + 1) * size.x; k++) {
+                    for (int l = j * size.y; l < (j + 1) * size.y; l++) {
+                        sum += map.getValue(k,l);
+                    }
+                }
+
+                mapCompressed.setValue(i, j, sum / (size.x * size.y));
             }
         }
 
@@ -108,7 +110,7 @@ public class MatrixOperation {
         Matrix matrix = new Matrix(size);
         for (int i = 0; i < size.x; i++) {
             for (int j = 0; j < size.y; j++) {
-                matrix.setValue(i, j, ((Math.random() * 2) - 0.05) / 10);
+                matrix.setValue(i, j, (/*(Math.random() * 2)*/Util.random.nextDouble() - 0.05) / 10);
             }
         }
         return matrix;
