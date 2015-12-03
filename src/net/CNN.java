@@ -270,16 +270,14 @@ public class CNN {
     }
 
     private void calcConvErrors(final Layer layer, final Layer layerNext, int indexMapOut){
-        Matrix mapError, map, s, extendMap;
-
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            mapError = layerNext.getError(indexMapOut, i);
-            map = layer.getMap(indexMapOut, i);
+            Matrix mapError = layerNext.getError(indexMapOut, i);
+            Matrix map = layer.getMap(indexMapOut, i);
             Matrix mapClone = MatrixOperation.clone(map);
             mapClone = MatrixOperation.valMinus(mapClone, 1.0);
-            s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
+            Matrix s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
 
-            extendMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
+            Matrix extendMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
             s = MatrixOperation.operation(s, extendMap, MatrixOperation.Op.MULTIPLY);
 
             layer.setErrorMap(indexMapOut, i, s);
@@ -289,10 +287,10 @@ public class CNN {
     // Вычисление ошибки субдескритизирующего слоя
     private void calcSubErrors(final Layer layer, final Layer layerNext, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix mapError, kernel, s = null;
+            Matrix s = null;
             for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
-                mapError = layerNext.getError(indexMapOut, j);
-                kernel = layerNext.getKernel(i, j);
+                Matrix mapError = layerNext.getError(indexMapOut, j);
+                Matrix kernel = layerNext.getKernel(i, j);
 
                 if (s != null){
                     Matrix sCur = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));

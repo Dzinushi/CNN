@@ -31,19 +31,19 @@ public class MatrixOperation {
 
         Matrix matrixRot = new Matrix(new Size(rowSize, colSize));
 
-        for (int i = 0; i < rowSize / 2; i++) {
-            for (int j = 0; j < colSize; j++) {
-                double value = matrix.getValue(i,j);
-                matrixRot.setValue(i, j, matrix.getValue(rowSize - i - 1, j));
-                matrixRot.setValue(rowSize - i - 1, j, value);
-            }
-        }
-
         for (int i = 0; i < rowSize; i++) {
             for (int j = 0; j < colSize / 2; j++) {
                 double value = matrix.getValue(i,j);
                 matrixRot.setValue(i, j, matrix.getValue(i, colSize - j - 1));
                 matrixRot.setValue(i, colSize - j - 1, value);
+            }
+        }
+
+        for (int i = 0; i < rowSize / 2; i++) {
+            for (int j = 0; j < colSize; j++) {
+                double value = matrixRot.getValue(i,j);
+                matrixRot.setValue(i, j, matrixRot.getValue(rowSize - i - 1, j));
+                matrixRot.setValue(rowSize - i - 1, j, value);
             }
         }
 
