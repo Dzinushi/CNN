@@ -29,23 +29,25 @@ public class MatrixOperation {
         int rowSize = matrix.getRowNum();
         int colSize = matrix.getColNum();
 
+        Matrix matrixRot = new Matrix(new Size(rowSize, colSize));
+
         for (int i = 0; i < rowSize / 2; i++) {
             for (int j = 0; j < colSize; j++) {
                 double value = matrix.getValue(i,j);
-                matrix.setValue(i, j, matrix.getValue(rowSize - i - 1, j));
-                matrix.setValue(rowSize - i - 1, j, value);
+                matrixRot.setValue(i, j, matrix.getValue(rowSize - i - 1, j));
+                matrixRot.setValue(rowSize - i - 1, j, value);
             }
         }
 
         for (int i = 0; i < rowSize; i++) {
             for (int j = 0; j < colSize / 2; j++) {
                 double value = matrix.getValue(i,j);
-                matrix.setValue(i, j, matrix.getValue(i, colSize - j - 1));
-                matrix.setValue(i, colSize - j - 1, value);
+                matrixRot.setValue(i, j, matrix.getValue(i, colSize - j - 1));
+                matrixRot.setValue(i, colSize - j - 1, value);
             }
         }
 
-        return matrix;
+        return matrixRot;
     }
 
     public static Matrix compression(final Matrix map, Size size){

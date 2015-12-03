@@ -24,7 +24,7 @@ public class Test {
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize = 50
-        cnn.train(trainData, 5);    // iterations = 1
+        cnn.train(trainData, 2);    // iterations = 1
 
         System.exit(0);
     }
