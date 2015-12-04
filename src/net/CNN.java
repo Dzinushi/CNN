@@ -1,5 +1,8 @@
 package net;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,11 +19,13 @@ public class CNN {
     private double alpha;
     private StopTrain stop;
 
+    private int count = 0;
+
     // Задано константное значение alpha
     public CNN(){
         batchsize = 0;
         lambda = 0;
-        alpha = 0.5;
+        alpha = 0.85;
         layers = new ArrayList<>();
         precision = new Precision();
         stop = new StopTrain();
@@ -105,6 +110,9 @@ public class CNN {
                     if (right){
                         precision.increase();
                     }
+
+                    // удалить
+                    //saveData();
                 }
 
                 update();
@@ -426,5 +434,144 @@ public class CNN {
 
     private Precision getPrecision(){
         return precision;
+    }
+
+
+
+
+
+    private void saveData(){
+        PrintWriter printWriter = null;
+
+        try {
+            printWriter = new PrintWriter("/media/dzinushi/Programs/Development/Java/PROJECTS/University/5/Course/CNN_for_Image/temp/" + String.valueOf(count) + "_CNN_for_image.txt", "UTF-8");
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        assert printWriter != null;
+
+        for (Layer layer : this.layers) {
+            switch (layer.getType()){
+                case INPUT:
+                    printWriter.println(layer.getType().toString());
+                    printWriter.print(stringOutMaps(layer));
+                    break;
+                case CONVOLUTION:
+                    printWriter.println(layer.getType().toString());
+                    printWriter.print(stringOutMaps(layer));
+                    printWriter.print(stringErrors(layer));
+                    printWriter.print(stringKernels(layer));
+                    printWriter.print(stringT(layer));
+                    break;
+                case SUBSAMPLING:
+                    printWriter.println(layer.getType().toString());
+                    printWriter.print(stringOutMaps(layer));
+                    printWriter.print(stringErrors(layer));
+                    break;
+                case OUTPUT:
+                    printWriter.println(layer.getType().toString());
+                    printWriter.print(stringOutMaps(layer));
+                    printWriter.print(stringErrors(layer));
+                    printWriter.print(stringKernels(layer));
+                    printWriter.print(stringT(layer));
+                    break;
+            }
+        }
+
+        count++;
+        printWriter.close();
+    }
+
+    private String stringOutMaps(Layer layer){
+        StringBuilder stringBuilder = new StringBuilder("\nMaps\n");
+        for (int i = 0; i < batchsize; i++) {
+            for (int j = 0; j < layer.getMapOutNumber(); j++) {
+                Matrix matrix = layer.getMap(i,j);
+                for (int k = 0; k < matrix.getRowNum(); k++) {
+                    for (int l = 0; l < matrix.getColNum(); l++) {
+                        stringBuilder.append('[')
+                                .append(i)
+                                .append(']')
+                                .append('[')
+                                .append(j)
+                                .append(']')
+                                .append('[')
+                                .append(k)
+                                .append(']')
+                                .append('=')
+                                .append(matrix.getValue(k,l))
+                                .append('\n');
+                    }
+                }
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private String stringErrors(Layer layer){
+        StringBuilder stringBuilder = new StringBuilder("\nErrors\n");
+        for (int i = 0; i < batchsize; i++) {
+            for (int j = 0; j < layer.getMapOutNumber(); j++) {
+                Matrix matrix = layer.getError(i,j);
+                for (int k = 0; k < matrix.getRowNum(); k++) {
+                    for (int l = 0; l < matrix.getColNum(); l++) {
+                        stringBuilder.append('[')
+                                .append(i)
+                                .append(']')
+                                .append('[')
+                                .append(j)
+                                .append(']')
+                                .append('[')
+                                .append(k)
+                                .append(']')
+                                .append('=')
+                                .append(matrix.getValue(k,l))
+                                .append('\n');
+                    }
+                }
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private String stringKernels(Layer layer){
+        StringBuilder stringBuilder = new StringBuilder("\nKernels\n");
+        List<List<Matrix>> kernel = layer.getKernel();
+        for (int i = 0; i < kernel.size(); i++) {
+            for (int j = 0; j < kernel.get(i).size(); j++) {
+                Matrix matrix = layer.getKernel(i,j);
+                for (int k = 0; k < matrix.getRowNum(); k++) {
+                    for (int l = 0; l < matrix.getColNum(); l++) {
+                        stringBuilder.append('[')
+                                .append(i)
+                                .append(']')
+                                .append('[')
+                                .append(j)
+                                .append(']')
+                                .append('[')
+                                .append(k)
+                                .append(']')
+                                .append('=')
+                                .append(matrix.getValue(k,l))
+                                .append('\n');
+                    }
+                }
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private String stringT(Layer layer){
+        StringBuilder stringBuilder = new StringBuilder("\nT\n");
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            stringBuilder.append('[')
+                    .append(i)
+                    .append(']')
+                    .append('=')
+                    .append(layer.getT(i))
+                    .append('\n');
+        }
+        return stringBuilder.toString();
     }
 }

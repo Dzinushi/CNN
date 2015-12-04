@@ -2,6 +2,8 @@ import dataset.Mnist;
 import net.CNN;
 import net.Layer;
 import net.CreateLayer;
+import util.Matrix;
+import util.MatrixOperation;
 import util.Size;
 
 import java.io.IOException;
@@ -24,7 +26,7 @@ public class Test {
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize = 50
-        cnn.train(trainData, 2);    // iterations = 1
+        cnn.train(trainData, 1);    // iterations = 1
 
         System.exit(0);
     }

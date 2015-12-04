@@ -1,7 +1,5 @@
 package util;
 
-import net.Layer;
-
 import java.util.Objects;
 
 public class MatrixOperation {
@@ -31,19 +29,9 @@ public class MatrixOperation {
 
         Matrix matrixRot = new Matrix(new Size(rowSize, colSize));
 
-        for (int i = 0; i < rowSize; i++) {
-            for (int j = 0; j < colSize / 2; j++) {
-                double value = matrix.getValue(i,j);
-                matrixRot.setValue(i, j, matrix.getValue(i, colSize - j - 1));
-                matrixRot.setValue(i, colSize - j - 1, value);
-            }
-        }
-
-        for (int i = 0; i < rowSize / 2; i++) {
-            for (int j = 0; j < colSize; j++) {
-                double value = matrixRot.getValue(i,j);
-                matrixRot.setValue(i, j, matrixRot.getValue(rowSize - i - 1, j));
-                matrixRot.setValue(rowSize - i - 1, j, value);
+        for (int i = 0, i1 = rowSize-1; i < rowSize; i++, i1--) {
+            for (int j = 0, j1 = colSize-1; j < colSize; j++, j1--) {
+                matrixRot.setValue(i, j, matrix.getValue(i1,j1));
             }
         }
 
@@ -152,7 +140,7 @@ public class MatrixOperation {
     }
 
     public static double sumAllCells(final Matrix matrix){
-        double result = 0;
+        double result = 0.0;
         for (int i = 0; i < matrix.getRowNum(); i++) {
             for (int j = 0; j < matrix.getColNum(); j++) {
                 result += matrix.getValue(i,j);

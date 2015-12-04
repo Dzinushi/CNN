@@ -230,6 +230,10 @@ public class Layer {
         return kernelSize;
     }
 
+    public List<List<Matrix>> getKernel(){
+        return kernel;
+    }
+
     public Size getCompressSise(){
         return compressSise;
     }
