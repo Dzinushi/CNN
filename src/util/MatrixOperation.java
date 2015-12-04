@@ -4,23 +4,25 @@ import java.util.Objects;
 
 public class MatrixOperation {
     public static Matrix multiply(final Matrix matrix, final double value){
+        Matrix result = new Matrix(new Size(matrix.getRowNum(), matrix.getColNum()));
         for (int i = 0; i < matrix.getRowNum(); i++) {
             for (int j = 0; j < matrix.getColNum(); j++) {
-                matrix.setValue(i, j, matrix.getValue(i,j) * value);
+                result.setValue(i, j, matrix.getValue(i,j) * value);
             }
         }
 
-        return matrix;
+        return result;
     }
 
     public static Matrix divide(final Matrix matrix, final double value){
+        Matrix result = new Matrix(new Size(matrix.getRowNum(), matrix.getColNum()));
         for (int i = 0; i < matrix.getRowNum(); i++) {
             for (int j = 0; j < matrix.getColNum(); j++) {
-                matrix.setValue(i, j, matrix.getValue(i, j) / value);
+                result.setValue(i, j, matrix.getValue(i, j) / value);
             }
         }
 
-        return matrix;
+        return result;
     }
 
     public static Matrix rot180(final Matrix matrix){

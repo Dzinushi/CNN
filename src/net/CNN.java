@@ -237,7 +237,7 @@ public class CNN {
     private Matrix activation(final Matrix s, double tValue){
         for (int i = 0; i < s.getRowNum(); i++) {
             for (int j = 0; j < s.getColNum(); j++) {
-                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j)) + tValue);
+                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j) + tValue));
             }
         }
         return s;
@@ -444,7 +444,7 @@ public class CNN {
         PrintWriter printWriter = null;
 
         try {
-            printWriter = new PrintWriter("/media/dzinushi/Programs/Development/Java/PROJECTS/University/5/Course/CNN_for_Image/temp/" + String.valueOf(count) + "_CNN_for_image.txt", "UTF-8");
+            printWriter = new PrintWriter("D:\\Development\\Java\\PROJECTS\\University\\5\\Course\\CNN_for_Image\\temp\\" + String.valueOf(count) + "_CNN_for_image.txt", "UTF-8");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
