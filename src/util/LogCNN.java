@@ -16,7 +16,7 @@ public class LogCNN {
 
     public static void printTestInfo(final Precision precision, long time){
         double percent = (1.0 - (double)precision.getValue() / precision.getCount()) * 100;
-        System.out.printf("Test precision: %d from %d; \t Errors: %.3f; \t Time test: %.3fs\n",
+        System.out.printf("test.TrainNet precision: %d from %d; \t Errors: %.3f; \t Time test: %.3fs\n",
                 precision.getValue(),
                 precision.getCount(),
                 percent,

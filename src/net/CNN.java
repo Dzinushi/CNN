@@ -1,5 +1,6 @@
 package net;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -7,16 +8,12 @@ import dataset.Mnist;
 import util.*;
 
 
-public class CNN {
+public class CNN implements Serializable{
 
     private int batchsize;
     private List<Layer> layers;
-    private Precision precision;
     private double lambda;
     private double alpha;
-    private StopTrain stop;
-
-    private int count = 0;
 
     // Задано константное значение alpha
     public CNN(){
@@ -24,8 +21,6 @@ public class CNN {
         lambda = 0;
         alpha = 0.85;
         layers = new ArrayList<>();
-        precision = new Precision();
-        stop = new StopTrain();
     }
 
     // Инициирование параметров сети
@@ -70,22 +65,28 @@ public class CNN {
         }
     }
 
-    /* Обучение сети. Вычисляется количество итераций, равное (количеству изображений БД) / batchsize.
-    *  Формируем массив случайных индексов размер которого равна количеству изображений в БД.
-    *  Производим последовательное обучение каждого слоя, подавая изображения в случайном порядке.
-    * */
+    /**
+     * Обучение сети. Вычисляется количество итераций, равное (количеству изображений БД) / batchsize.
+     *  Формируем массив случайных индексов размер которого равна количеству изображений в БД.
+     *  Производим последовательное обучение каждого слоя, подавая изображения в случайном порядке.
+     * @param trainData - база данных для обучения сети
+     * @param iteration - количество итераций обучения
+     */
     public void train(Mnist trainData, int iteration){
-        TimeCNN timeCNN = new TimeCNN();
         int numbatches = trainData.getSize() / batchsize;
-        this.precision.setCount(trainData.getSize());
+
+        Precision precision = new Precision();
+        precision.setCount(trainData.getSize());
 
         // Запус функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
+        StopTrain stop = new StopTrain();
         Thread thread = new Thread(stop);
         thread.start();
 
         System.out.printf("\nStart training\n");
 
-        for (int i = 0; i < iteration & !this.stop.isEnd(); i++) {
+        TimeCNN timeCNN = new TimeCNN();
+        for (int i = 0; i < iteration & !stop.isEnd(); i++) {
             timeCNN.start();
             int[] randIndexes = Util.randPerm(trainData.getSize());
 
@@ -107,7 +108,7 @@ public class CNN {
                 update();
             }
 
-            LogCNN.printTrainInfo(getPrecision(), timeCNN.getTimeLast());
+            LogCNN.printTrainInfo(precision, timeCNN.getTimeLast());
             precision.resetValue();
         }
 
@@ -432,12 +433,12 @@ public class CNN {
         testPrecision.setCount(testData.getSize());
         Size imageSize = new Size(testData.getImageWidth(), testData.getImageHeight());
         TimeCNN timeTest = new TimeCNN();
+        timeTest.start();
 
         for (int i = 0; i < testData.getSize(); i++) {
 
             trainAllLayers(testData.getData(i), imageSize, 0);
 
-            timeTest.start();
             Layer layerOut = layers.get(layers.size() - 1);
             double[] answer = new double[layerOut.getMapOutNumber()];
 
@@ -450,15 +451,25 @@ public class CNN {
                 testPrecision.increase();
             }
 
-            timeTest.getTimeLast();
         }
 
-        LogCNN.printTestInfo(testPrecision, timeTest.getTimeAll());
+        LogCNN.printTestInfo(testPrecision, timeTest.getTimeLast());
 
         return testPrecision;
     }
 
-    private Precision getPrecision(){
-        return precision;
+    public void save(String filename) throws IOException {
+        FileOutputStream fos = new FileOutputStream(filename + ".cnn");
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(this);
+        oos.flush();
+        oos.close();
+    }
+
+    public CNN read(String filepath) throws IOException, ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(filepath);
+        ObjectInputStream oin = new ObjectInputStream(fis);
+        CNN cnn = (CNN) oin.readObject();
+        return cnn;
     }
 }

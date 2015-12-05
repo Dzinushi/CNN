@@ -3,10 +3,12 @@ package net;
 import util.Matrix;
 import util.MatrixOperation;
 import util.Size;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Layer {
+public class Layer implements Serializable{
     public LayerType type;
     private int mapOutNumber;
     private Size mapsSize;
@@ -18,7 +20,7 @@ public class Layer {
     private List<List<Matrix>> mapOut;  // набор карт
     private double[] t;                 // пороговые значения
 
-    enum LayerType {
+    enum LayerType{
         INPUT, OUTPUT, CONVOLUTION, SUBSAMPLING
     }
 

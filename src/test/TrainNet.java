@@ -1,3 +1,5 @@
+package test;
+
 import dataset.Mnist;
 import net.CNN;
 import net.Layer;
@@ -6,7 +8,7 @@ import util.Size;
 
 import java.io.IOException;
 
-public class Test {
+public class TrainNet {
 
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
@@ -20,18 +22,12 @@ public class Test {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String labelsTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 60000);
+        trainData.load(imagesTrain, labelsTrain, 12000);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize
-        cnn.train(trainData, 3);    // iterations
-
-        String imagesTest = "database/MNIST/test-images.idx3-ubyte";
-        String labelsTest = "database/MNIST/test-labels.idx1-ubyte";
-        Mnist testData = new Mnist();
-        testData.load(imagesTest, labelsTest, 60000);
-
-        cnn.test(testData);
+        cnn.train(trainData, 1);    // iterations
+        cnn.save("net_mnist");
 
         System.exit(0);
     }

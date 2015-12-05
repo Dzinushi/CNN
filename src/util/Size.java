@@ -1,7 +1,9 @@
 package util;
 
+import java.io.Serializable;
 
-public class Size{
+
+public class Size implements Serializable{
 
     public final int x;
     public final int y;

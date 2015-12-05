@@ -1,6 +1,9 @@
 package util;
 
-public class Precision {
+import java.io.Serializable;
+
+
+public class Precision implements Serializable{
     int value;
     int count;
 

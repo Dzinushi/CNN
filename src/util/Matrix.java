@@ -1,6 +1,8 @@
 package util;
 
-public class Matrix {
+import java.io.Serializable;
+
+public class Matrix implements Serializable{
     private double[][] data;
 
     public Matrix(Size size){
