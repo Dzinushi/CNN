@@ -102,7 +102,7 @@ public class MatrixOperation {
         Matrix matrix = new Matrix(size);
         for (int i = 0; i < size.x; i++) {
             for (int j = 0; j < size.y; j++) {
-                matrix.setValue(i, j, (/*(Math.random() * 2)*/Util.random.nextDouble() - 0.05) / 10);
+                matrix.setValue(i, j, (Math.random() - 0.05) / 10);
             }
         }
         return matrix;

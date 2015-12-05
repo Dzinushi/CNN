@@ -1,8 +1,5 @@
 package net;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,13 +32,10 @@ public class CNN {
     public void setup(CreateLayer layers, int batchSize){
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
+        Layer layer, layerPrev = null;
 
         for (int i = 0; i < this.layers.size(); i++) {
 
-            Layer inputLayer = null, layer;
-            if (!Objects.equals(i,0)) {
-                inputLayer = this.layers.get(i - 1);
-            }
             layer = this.layers.get(i);
 
             switch (layer.getType()){
@@ -51,27 +45,28 @@ public class CNN {
                     break;
 
                 case CONVOLUTION:
-                    layer.setMapSize(inputLayer.getMapsSize().subtract(layer.getKernelSize(), 1));
-                    layer.setKernelSize(inputLayer.getMapOutNumber());
+                    layer.setMapSize(layerPrev.getMapsSize().subtract(layer.getKernelSize(), 1));
+                    layer.setKernelSize(layerPrev.getMapOutNumber());
                     layer.setTSize();
                     layer.setErrorSize(this.batchsize);
                     layer.setMapOutSize(this.batchsize);
                     break;
 
                 case SUBSAMPLING:
-                    layer.setMapOutNumber(inputLayer.getMapOutNumber());
-                    layer.setMapSize(inputLayer.getMapsSize().divide(layer.getCompressSise()));
+                    layer.setMapOutNumber(layerPrev.getMapOutNumber());
+                    layer.setMapSize(layerPrev.getMapsSize().divide(layer.getCompressSise()));
                     layer.setErrorSize(this.batchsize);
                     layer.setMapOutSize(this.batchsize);
                     break;
 
                 case OUTPUT:
-                    layer.setOutKernel(inputLayer.getMapOutNumber(), inputLayer.getMapsSize());
+                    layer.setOutKernel(layerPrev.getMapOutNumber(), layerPrev.getMapsSize());
                     layer.setTSize();
                     layer.setErrorSize(this.batchsize);
                     layer.setMapOutSize(this.batchsize);
                     break;
             }
+            layerPrev = layer;
         }
     }
 
@@ -79,11 +74,10 @@ public class CNN {
     *  Формируем массив случайных индексов размер которого равна количеству изображений в БД.
     *  Производим последовательное обучение каждого слоя, подавая изображения в случайном порядке.
     * */
-    public void train(Mnist mnist, int iteration){
+    public void train(Mnist trainData, int iteration){
         TimeCNN timeCNN = new TimeCNN();
-        timeCNN.start();
-        int numbatches = mnist.getSize() / batchsize;
-        this.precision.setCount(mnist.getSize());
+        int numbatches = trainData.getSize() / batchsize;
+        this.precision.setCount(trainData.getSize());
 
         // Запус функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
         Thread thread = new Thread(stop);
@@ -92,17 +86,15 @@ public class CNN {
         System.out.printf("\nStart training\n");
 
         for (int i = 0; i < iteration & !this.stop.isEnd(); i++) {
-            //int[] randIndexes = Util.randPerm(mnist.getSize());
+            timeCNN.start();
+            int[] randIndexes = Util.randPerm(trainData.getSize());
 
             for (int j = 0; j < numbatches; j++) {
-
-                int[] randIndexes = Util.randPerm(mnist.getSize(), batchsize);
-
                 for (int k = 0; k < batchsize; k++) {
                     int index = randIndexes[k];
-                    double[] image = mnist.getData(index);
-                    double[] lable = mnist.getLable(index);
-                    Size imageSize = new Size(mnist.getImageWidth(), mnist.getImageHeight());
+                    double[] image = trainData.getData(index);
+                    double[] lable = trainData.getLable(index);
+                    Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
 
                     trainAllLayers(image, imageSize, k);
                     boolean right = backPropagation(lable, k);
@@ -110,16 +102,12 @@ public class CNN {
                     if (right){
                         precision.increase();
                     }
-
-                    // удалить
-                    //saveData();
                 }
 
                 update();
             }
 
-            LogCNN.printInfo(getPrecision(), timeCNN.getTimeLast());
-            timeCNN.start();
+            LogCNN.printTrainInfo(getPrecision(), timeCNN.getTimeLast());
             precision.resetValue();
         }
 
@@ -128,13 +116,9 @@ public class CNN {
 
     // Обучение всех слоев нейронной сети
     private void trainAllLayers(double[] data, Size imageSize, int indexMapOut){
+        Layer layer, layerPrev = null;
         for (int i = 0; i < layers.size(); i++) {
-
-            Layer layer = null, layerPrev = null;
-            if (!Objects.equals(i, 0)){
-                layer = layers.get(i);
-                layerPrev = layers.get(i - 1);
-            }
+            layer = layers.get(i);
 
             switch (layers.get(i).getType()){
                 case INPUT:
@@ -153,6 +137,8 @@ public class CNN {
                     trainOutLayer(layer, layerPrev, indexMapOut);
                     break;
             }
+
+            layerPrev = layer;
         }
     }
 
@@ -432,146 +418,47 @@ public class CNN {
         }
     }
 
+    /**
+     * Обучаем все слои нейронной сети на тестируемых данных, не изменяя весовые коэффициенты
+     * и пороговые значения
+     * @param testData - база данные для тестирования обученной нейронной сети
+     * @return - возвращает объект класса содержащий количество распознанных данных и общее количество данных
+     * для распознавания
+     */
+    public Precision test(Mnist testData){
+        System.out.println("\nStart testing");
+
+        Precision testPrecision = new Precision();
+        testPrecision.setCount(testData.getSize());
+        Size imageSize = new Size(testData.getImageWidth(), testData.getImageHeight());
+        TimeCNN timeTest = new TimeCNN();
+
+        for (int i = 0; i < testData.getSize(); i++) {
+
+            trainAllLayers(testData.getData(i), imageSize, 0);
+
+            timeTest.start();
+            Layer layerOut = layers.get(layers.size() - 1);
+            double[] answer = new double[layerOut.getMapOutNumber()];
+
+            for (int j = 0; j < layerOut.getMapOutNumber(); j++) {
+                answer[j] = layerOut.getMap(0, j).getValue(0,0);
+            }
+
+            boolean right = isRightLable(answer, testData.getLable(i));
+            if (right){
+                testPrecision.increase();
+            }
+
+            timeTest.getTimeLast();
+        }
+
+        LogCNN.printTestInfo(testPrecision, timeTest.getTimeAll());
+
+        return testPrecision;
+    }
+
     private Precision getPrecision(){
         return precision;
-    }
-
-
-
-
-
-    private void saveData(){
-        PrintWriter printWriter = null;
-
-        try {
-            printWriter = new PrintWriter("D:\\Development\\Java\\PROJECTS\\University\\5\\Course\\CNN_for_Image\\temp\\" + String.valueOf(count) + "_CNN_for_image.txt", "UTF-8");
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        assert printWriter != null;
-
-        for (Layer layer : this.layers) {
-            switch (layer.getType()){
-                case INPUT:
-                    printWriter.println(layer.getType().toString());
-                    printWriter.print(stringOutMaps(layer));
-                    break;
-                case CONVOLUTION:
-                    printWriter.println(layer.getType().toString());
-                    printWriter.print(stringOutMaps(layer));
-                    printWriter.print(stringErrors(layer));
-                    printWriter.print(stringKernels(layer));
-                    printWriter.print(stringT(layer));
-                    break;
-                case SUBSAMPLING:
-                    printWriter.println(layer.getType().toString());
-                    printWriter.print(stringOutMaps(layer));
-                    printWriter.print(stringErrors(layer));
-                    break;
-                case OUTPUT:
-                    printWriter.println(layer.getType().toString());
-                    printWriter.print(stringOutMaps(layer));
-                    printWriter.print(stringErrors(layer));
-                    printWriter.print(stringKernels(layer));
-                    printWriter.print(stringT(layer));
-                    break;
-            }
-        }
-
-        count++;
-        printWriter.close();
-    }
-
-    private String stringOutMaps(Layer layer){
-        StringBuilder stringBuilder = new StringBuilder("\nMaps\n");
-        for (int i = 0; i < batchsize; i++) {
-            for (int j = 0; j < layer.getMapOutNumber(); j++) {
-                Matrix matrix = layer.getMap(i,j);
-                for (int k = 0; k < matrix.getRowNum(); k++) {
-                    for (int l = 0; l < matrix.getColNum(); l++) {
-                        stringBuilder.append('[')
-                                .append(i)
-                                .append(']')
-                                .append('[')
-                                .append(j)
-                                .append(']')
-                                .append('[')
-                                .append(k)
-                                .append(']')
-                                .append('=')
-                                .append(matrix.getValue(k,l))
-                                .append('\n');
-                    }
-                }
-            }
-        }
-        return stringBuilder.toString();
-    }
-
-    private String stringErrors(Layer layer){
-        StringBuilder stringBuilder = new StringBuilder("\nErrors\n");
-        for (int i = 0; i < batchsize; i++) {
-            for (int j = 0; j < layer.getMapOutNumber(); j++) {
-                Matrix matrix = layer.getError(i,j);
-                for (int k = 0; k < matrix.getRowNum(); k++) {
-                    for (int l = 0; l < matrix.getColNum(); l++) {
-                        stringBuilder.append('[')
-                                .append(i)
-                                .append(']')
-                                .append('[')
-                                .append(j)
-                                .append(']')
-                                .append('[')
-                                .append(k)
-                                .append(']')
-                                .append('=')
-                                .append(matrix.getValue(k,l))
-                                .append('\n');
-                    }
-                }
-            }
-        }
-        return stringBuilder.toString();
-    }
-
-    private String stringKernels(Layer layer){
-        StringBuilder stringBuilder = new StringBuilder("\nKernels\n");
-        List<List<Matrix>> kernel = layer.getKernel();
-        for (int i = 0; i < kernel.size(); i++) {
-            for (int j = 0; j < kernel.get(i).size(); j++) {
-                Matrix matrix = layer.getKernel(i,j);
-                for (int k = 0; k < matrix.getRowNum(); k++) {
-                    for (int l = 0; l < matrix.getColNum(); l++) {
-                        stringBuilder.append('[')
-                                .append(i)
-                                .append(']')
-                                .append('[')
-                                .append(j)
-                                .append(']')
-                                .append('[')
-                                .append(k)
-                                .append(']')
-                                .append('=')
-                                .append(matrix.getValue(k,l))
-                                .append('\n');
-                    }
-                }
-            }
-        }
-        return stringBuilder.toString();
-    }
-
-    private String stringT(Layer layer){
-        StringBuilder stringBuilder = new StringBuilder("\nT\n");
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            stringBuilder.append('[')
-                    .append(i)
-                    .append(']')
-                    .append('=')
-                    .append(layer.getT(i))
-                    .append('\n');
-        }
-        return stringBuilder.toString();
     }
 }
