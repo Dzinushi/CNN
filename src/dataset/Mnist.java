@@ -4,7 +4,7 @@ import util.Util;
 import java.io.*;
 
 
-public class Mnist {
+public class Mnist implements DataBase{
     private double[][] lable;
     private double[][] datas;
 
@@ -88,7 +88,7 @@ public class Mnist {
         return datas[index];
     }
 
-    public double[] getLable(int index){
+    public double[] getLabel(int index){
         return lable[index];
     }
 

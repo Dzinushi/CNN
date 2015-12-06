@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import dataset.DataBase;
 import dataset.Mnist;
 import util.*;
 
@@ -78,7 +80,7 @@ public class CNN implements Serializable{
      * @param trainData - база данных для обучения сети
      * @param iteration - количество итераций обучения
      */
-    public void train(Mnist trainData, int iteration){
+    public void train(DataBase trainData, int iteration){
         int numbatches = trainData.getSize() / batchsize;
 
         Precision precision = new Precision();
@@ -99,7 +101,7 @@ public class CNN implements Serializable{
                 for (int k = 0; k < batchsize; k++) {
                     int index = randIndexes[k];
                     double[] image = trainData.getData(index);
-                    double[] lable = trainData.getLable(index);
+                    double[] lable = trainData.getLabel(index);
                     Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
 
                     trainAllLayers(image, imageSize, k);
@@ -500,7 +502,7 @@ public class CNN implements Serializable{
      * @return - возвращает объект класса содержащий количество распознанных данных и общее количество данных
      * для распознавания
      */
-    public Precision test(Mnist testData){
+    public Precision test(DataBase testData){
         System.out.println("\nStart testing");
 
         Precision testPrecision = new Precision();
@@ -520,7 +522,7 @@ public class CNN implements Serializable{
                 answer[j] = layerOut.getMap(0, j).getValue(0,0);
             }
 
-            boolean right = isRightLable(answer, testData.getLable(i));
+            boolean right = isRightLable(answer, testData.getLabel(i));
             if (right){
                 testPrecision.increase();
             }
