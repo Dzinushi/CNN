@@ -14,6 +14,7 @@ public class CNN implements Serializable{
     private List<Layer> layers;
     private double lambda;
     private double alpha;
+    private TimeCNN timeTraining;
 
     // Задано константное значение alpha
     public CNN(){
@@ -21,9 +22,14 @@ public class CNN implements Serializable{
         lambda = 0;
         alpha = 0.85;
         layers = new ArrayList<>();
+        timeTraining = new TimeCNN();
     }
 
-    // Инициирование параметров сети
+    /**
+     * Инициализация всех слоев сети
+     * @param layers - список всех слоев сети
+     * @param batchSize - размер выборки группового обучения
+     */
     public void setup(CreateLayer layers, int batchSize){
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
@@ -85,9 +91,8 @@ public class CNN implements Serializable{
 
         System.out.printf("\nStart training\n");
 
-        TimeCNN timeCNN = new TimeCNN();
         for (int i = 0; i < iteration & !stop.isEnd(); i++) {
-            timeCNN.start();
+            this.timeTraining.start();
             int[] randIndexes = Util.randPerm(trainData.getSize());
 
             for (int j = 0; j < numbatches; j++) {
@@ -108,14 +113,19 @@ public class CNN implements Serializable{
                 update();
             }
 
-            LogCNN.printTrainInfo(precision, timeCNN.getTimeLast());
+            LogCNN.printTrainInfo(precision, timeTraining.getTimeLast());
             precision.resetValue();
         }
 
-        LogCNN.printAllTime(timeCNN.getTimeAll());
+        LogCNN.printAllTime(this.timeTraining.getTimeAll());
     }
 
-    // Обучение всех слоев нейронной сети
+    /**
+     * Обучение всех слоев сети
+     * @param data - изображение из базы данных
+     * @param imageSize - размер изображения
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void trainAllLayers(double[] data, Size imageSize, int indexMapOut){
         Layer layer, layerPrev = null;
         for (int i = 0; i < layers.size(); i++) {
@@ -143,7 +153,12 @@ public class CNN implements Serializable{
         }
     }
 
-    // Задание изображения на входной слой (всего может быть batchsize изображений на входном слое)
+    /**
+     * Формирование входного слоя на основе передаваемого изображения из базы данных
+     * @param data - изображение из базы данных
+     * @param imageSize - размер изображения
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void trainInputLayer(double[] data, Size imageSize, int indexMapOut){
         Layer layer = layers.get(0);
         for (int i = 0; i < imageSize.x; i++) {
@@ -153,7 +168,12 @@ public class CNN implements Serializable{
         }
     }
 
-    // Обучение сверточного слоя
+    /**
+     * Обучение сверточного слоя
+     * @param layer - текущий сверточный слой
+     * @param layerPrev - предыдущий слой (входной / субдескритизирующий)
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void trainConvLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix s = null;
@@ -171,7 +191,12 @@ public class CNN implements Serializable{
         }
     }
 
-    // Обучение субдескритизирующего слоя
+    /**
+     * Обучение субдескритизирующего слоя
+     * @param layer - текущий субдескритизирующий слой
+     * @param layerPrev - предыдущий слой (сверточный слой)
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void trainSubLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
@@ -179,7 +204,12 @@ public class CNN implements Serializable{
         }
     }
 
-    // Обучение выходного слоя
+    /**
+     * Обучение выходного слоя
+     * @param layer - выходной слой
+     * @param layerPrev - предыдущий слой (субдескритизирующий слой)
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix s = null;
@@ -197,11 +227,15 @@ public class CNN implements Serializable{
         }
     }
 
-    // Считаем размер карты исходя из размера ядра обхода изображения
-    // Считаем взвешенную сумму для одной карты (функция активации сигмоидная)
-    private Matrix sum(final Matrix image, final Matrix kernel){
-        int row = image.getRowNum() - kernel.getRowNum() + 1;
-        int column = image.getColNum() - kernel.getColNum() + 1;
+    /**
+     * Вычисление взвешенной суммы как произведение значения карты предыдущего слоя с ядром свертки текущего
+     * @param map - матрица карты предыдущего слоя
+     * @param kernel - матрица ядра свертки текущего слоя
+     * @return - матрица взвешенной суммы
+     */
+    private Matrix sum(final Matrix map, final Matrix kernel){
+        int row = map.getRowNum() - kernel.getRowNum() + 1;
+        int column = map.getColNum() - kernel.getColNum() + 1;
         Matrix result = new Matrix(new Size(row, column));
 
         for (int i = 0; i < row; i++) {
@@ -209,7 +243,7 @@ public class CNN implements Serializable{
                 double value = 0.0;
                 for (int k = 0; k < kernel.getRowNum(); k++) {
                     for (int l = 0; l < kernel.getColNum(); l++) {
-                        value += image.getValue(i+k, j+l) * kernel.getValue(k,l);
+                        value += map.getValue(i+k, j+l) * kernel.getValue(k,l);
                     }
                 }
 
@@ -220,7 +254,12 @@ public class CNN implements Serializable{
         return result;
     }
 
-    // Рассчет функции активации для взвешенной суммы
+    /**
+     * Рассчет функции активации для взвешенной суммы
+     * @param s - матрица взвешенной суммы
+     * @param tValue - пороговое значение
+     * @return - результат апроксимации на кривую (сигмоида или гиперболический тангенс)
+     */
     private Matrix activation(final Matrix s, double tValue){
         for (int i = 0; i < s.getRowNum(); i++) {
             for (int j = 0; j < s.getColNum(); j++) {
@@ -230,13 +269,16 @@ public class CNN implements Serializable{
         return s;
     }
 
-    // Метод распостранения ошибки сети
-    // Дописать рассчет ошибок выходного и скрытого слоев
+    /**
+     * Вычисление ошибки обратного распространения
+     * @param lable - эталонное значение выхода
+     * @param indexMapOut - индекс элемента группового обучения
+     * @return - результат сравнения эталонного значения со значением полученным от сети
+     */
     private boolean backPropagation(double[] lable, int indexMapOut){
 
         boolean isRight = false;
 
-        // Ошибки сверточных и субдескритизирующих слоев
         // 0-й слой - входной слой, не имеющий ошибок, содержащий эталонные значения
         for (int i = layers.size() - 1; i > 0; i--) {
             Layer layer = layers.get(i);
@@ -264,6 +306,12 @@ public class CNN implements Serializable{
         return isRight;
     }
 
+    /**
+     * Вычисление ошибки сверточного слоя
+     * @param layer - текущий субдескритизирующий слой
+     * @param layerNext - следующий за ним слой - серточный / выходной
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void calcConvErrors(final Layer layer, final Layer layerNext, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix mapError = layerNext.getError(indexMapOut, i);
@@ -279,7 +327,13 @@ public class CNN implements Serializable{
         }
     }
 
-    // Вычисление ошибки субдескритизирующего слоя
+
+    /**
+     * Вычисление ошибки субдескритизирующего слоя
+     * @param layer - текущий субдескритизирующий слой
+     * @param layerNext - следующий за ним слой - серточный / выходной
+     * @param indexMapOut - индекс элемента группового обучения
+     */
     private void calcSubErrors(final Layer layer, final Layer layerNext, int indexMapOut){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             Matrix s = null;
@@ -299,7 +353,6 @@ public class CNN implements Serializable{
         }
     }
 
-    // Вычисление взвешенной суммы сверточного слоя
     private Matrix calcMatrixConvError(final Matrix matrix, final Matrix kernel){
         int row = matrix.getRowNum() + 2 * (kernel.getRowNum() - 1);
         int column = matrix.getColNum() + 2 * (kernel.getColNum() - 1);
@@ -314,7 +367,12 @@ public class CNN implements Serializable{
         return sum(extend, kernel);
     }
 
-    // Ошибки выходного слоя
+    /**
+     *
+     * @param lable - эталонное значение выхода
+     * @param indexMapOut - номер элемента группового обучения
+     * @return сравнение полученного от сети значения с эталонным
+     */
     private boolean calcOutErrors(double[] lable, int indexMapOut){
         Layer outLayer = layers.get(layers.size() - 1); // выходной слой
         double[] answer = new double[outLayer.getMapOutNumber()];
@@ -333,6 +391,12 @@ public class CNN implements Serializable{
         return isRightLable(answer, lable);
     }
 
+    /**
+     * Сравнение полученного от нейронной сети значения с эталонным значением и возврат результата в виде true / false
+     * @param answer - результат распознавания полученный от нейронной сети
+     * @param lable - эталонное значение выхода
+     * @return - сравнение полученного от сети значения с эталонным
+     */
     private boolean isRightLable(double[] answer, double[] lable){
         int lableIndex = 0;
         boolean repeat = true;
@@ -355,8 +419,9 @@ public class CNN implements Serializable{
         return Objects.equals(lableIndex, answerIndex);
     }
 
-    // Обновление значений ядра свертки и пороговых значений
-    // 0-й слой - входной слой, не требующий обновления
+    /**
+     * Обновление ядер свертки и пороговых значений для сверточных и выходного слоев
+     */
     private void update(){
         for (int i = 1; i < layers.size(); i++) {
             Layer layer = layers.get(i);
@@ -369,6 +434,11 @@ public class CNN implements Serializable{
         }
     }
 
+    /**
+     * Обновление ядра свертки для сверточного / выходного слоев
+     * @param layer - текущий сверточный / выходной слой
+     * @param layerPrev - предыдущий слой (входной / субдескритизирующий)
+     */
     private void updateKernel(final Layer layer, final Layer layerPrev){
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
             for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
@@ -395,6 +465,10 @@ public class CNN implements Serializable{
         }
     }
 
+    /**
+     * Обновление пороговых значений для сверточного и выходного слоев
+     * @param layer - сверточный / выходной слой
+     */
     private void updateT(final Layer layer){
         List<List<Matrix>> error  = layer.getError();
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
@@ -458,6 +532,11 @@ public class CNN implements Serializable{
         return testPrecision;
     }
 
+    /**
+     * Сериализация объекта CNN в файл с именем "filename" и расширением ".cnn"
+     * @param filename - имя файла сериализованного объекта CNN
+     * @throws IOException - ошибка сохранения или открытия файла
+     */
     public void save(String filename) throws IOException {
         FileOutputStream fos = new FileOutputStream(filename + ".cnn");
         ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -466,10 +545,16 @@ public class CNN implements Serializable{
         oos.close();
     }
 
+    /**
+     * Десериализация CNN-объекта из файла лежащего по пути "filepath" в объект среды.
+     * @param filepath - путь к сеарилизованному объекту CNN
+     * @return - десериализованный объект CNN
+     * @throws IOException - ошибка открытия / чтения файла
+     * @throws ClassNotFoundException - несуществующий класс
+     */
     public CNN read(String filepath) throws IOException, ClassNotFoundException {
         FileInputStream fis = new FileInputStream(filepath);
         ObjectInputStream oin = new ObjectInputStream(fis);
-        CNN cnn = (CNN) oin.readObject();
-        return cnn;
+        return (CNN) oin.readObject();
     }
 }

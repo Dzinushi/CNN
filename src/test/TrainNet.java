@@ -22,11 +22,11 @@ public class TrainNet {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String labelsTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 12000);
+        trainData.load(imagesTrain, labelsTrain, 60000);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize
-        cnn.train(trainData, 1);    // iterations
+        cnn.train(trainData, 2);    // iterations
         cnn.save("net_mnist");
 
         System.exit(0);

@@ -12,7 +12,7 @@ public class ContinueTrainNet {
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
         String labelsTrain = "database/MNIST/train-labels.idx1-ubyte";
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 12000);
+        trainData.load(imagesTrain, labelsTrain, 60000);
 
         CNN cnn = new CNN();
         try {
@@ -22,6 +22,7 @@ public class ContinueTrainNet {
         }
 
         cnn.train(trainData, 1);
+        cnn.save("net_mnist");
         System.exit(0);
     }
 }

@@ -1,7 +1,9 @@
 package util;
 
 
-public class TimeCNN{
+import java.io.Serializable;
+
+public class TimeCNN implements Serializable{
     private long timeAll;
     private long timeLast;
     private boolean isCheck;
