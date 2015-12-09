@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 
 import dataset.DataBase;
-import dataset.Mnist;
 import util.*;
 
 
@@ -22,7 +21,7 @@ public class CNN implements Serializable{
     public CNN(){
         batchsize = 0;
         lambda = 0;
-        alpha = 0.85;
+        alpha = 0.5;
         layers = new ArrayList<>();
         timeTraining = new TimeCNN();
     }
@@ -93,23 +92,25 @@ public class CNN implements Serializable{
 
         System.out.printf("\nStart training\n");
 
+        int[] randIndexes = Util.randPerm(trainData.getSize());
         for (int i = 0; i < iteration & !stop.isEnd(); i++) {
             this.timeTraining.start();
-            int[] randIndexes = Util.randPerm(trainData.getSize());
 
+            int z = 0;
             for (int j = 0; j < numbatches; j++) {
                 for (int k = 0; k < batchsize; k++) {
-                    int index = randIndexes[k];
+                    int index = z;//randIndexes[k];
                     double[] image = trainData.getData(index);
-                    double[] lable = trainData.getLabel(index);
+                    double[] label = trainData.getLabel(index);
                     Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
 
                     trainAllLayers(image, imageSize, k);
-                    boolean right = backPropagation(lable, k);
+                    boolean right = backPropagation(label, k);
 
                     if (right){
                         precision.increase();
                     }
+                    z++;
                 }
 
                 update();
@@ -177,20 +178,25 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void trainConvLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix s = null;
-            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                if (s != null){
-                    Matrix sCur = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                    s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
-                }
-                else {
-                    s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    Matrix s = null;
+                    for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                        if (s != null){
+                            Matrix sCur = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+                            s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
+                        }
+                        else {
+                            s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+                        }
+                    }
+                    s = activation(s, layer.getT(i));
+                    layer.setMapOutValue(indexMapOut, i, s);
                 }
             }
-            s = activation(s, layer.getT(i));
-            layer.setMapOutValue(indexMapOut, i, s);
-        }
+        };
     }
 
     /**
@@ -200,10 +206,15 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void trainSubLayer(final Layer layer, final Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
-            layer.setMapOutValue(indexMapOut, i, sampMatrix);
-        }
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
+                    layer.setMapOutValue(indexMapOut, i, sampMatrix);
+                }
+            }
+        };
     }
 
     /**
@@ -213,20 +224,25 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix s = null;
-            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                if (s != null){
-                    Matrix sCur = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                    s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
-                }
-                else {
-                    s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    Matrix s = null;
+                    for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                        if (s != null){
+                            Matrix sCur = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+                            s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
+                        }
+                        else {
+                            s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
+                        }
+                    }
+                    s = activation(s, layer.getT(i));
+                    layer.setMapOutValue(indexMapOut, i, s);
                 }
             }
-            s = activation(s, layer.getT(i));
-            layer.setMapOutValue(indexMapOut, i, s);
-        }
+        };
     }
 
     /**
@@ -273,11 +289,11 @@ public class CNN implements Serializable{
 
     /**
      * Вычисление ошибки обратного распространения
-     * @param lable - эталонное значение выхода
+     * @param label - эталонное значение выхода
      * @param indexMapOut - индекс элемента группового обучения
      * @return - результат сравнения эталонного значения со значением полученным от сети
      */
-    private boolean backPropagation(double[] lable, int indexMapOut){
+    private boolean backPropagation(double[] label, int indexMapOut){
 
         boolean isRight = false;
 
@@ -300,7 +316,7 @@ public class CNN implements Serializable{
                     break;
 
                 case OUTPUT:
-                    isRight = calcOutErrors(lable, indexMapOut);
+                    isRight = calcOutErrors(label, indexMapOut);
                     break;
             }
         }
@@ -315,18 +331,23 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void calcConvErrors(final Layer layer, final Layer layerNext, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix mapError = layerNext.getError(indexMapOut, i);
-            Matrix map = layer.getMap(indexMapOut, i);
-            Matrix mapClone = MatrixOperation.clone(map);
-            mapClone = MatrixOperation.valMinus(mapClone, 1.0);
-            Matrix s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    Matrix mapError = layerNext.getError(indexMapOut, i);
+                    Matrix map = layer.getMap(indexMapOut, i);
+                    Matrix mapClone = MatrixOperation.clone(map);
+                    mapClone = MatrixOperation.valMinus(mapClone, 1.0);
+                    Matrix s = MatrixOperation.operation(map, mapClone, MatrixOperation.Op.MULTIPLY);
 
-            Matrix extendMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
-            s = MatrixOperation.operation(s, extendMap, MatrixOperation.Op.MULTIPLY);
+                    Matrix extendMap = MatrixOperation.extend(mapError, layerNext.getCompressSise());
+                    s = MatrixOperation.operation(s, extendMap, MatrixOperation.Op.MULTIPLY);
 
-            layer.setErrorMap(indexMapOut, i, s);
-        }
+                    layer.setErrorMap(indexMapOut, i, s);
+                }
+            }
+        };
     }
 
 
@@ -337,22 +358,27 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void calcSubErrors(final Layer layer, final Layer layerNext, int indexMapOut){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            Matrix s = null;
-            for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
-                Matrix mapError = layerNext.getError(indexMapOut, j);
-                Matrix kernel = layerNext.getKernel(i, j);
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    Matrix s = null;
+                    for (int j = 0; j < layerNext.getMapOutNumber(); j++) {
+                        Matrix mapError = layerNext.getError(indexMapOut, j);
+                        Matrix kernel = layerNext.getKernel(i, j);
 
-                if (s != null){
-                    Matrix sCur = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));
-                    s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
-                }
-                else {
-                    s = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));
+                        if (s != null){
+                            Matrix sCur = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));
+                            s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
+                        }
+                        else {
+                            s = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));
+                        }
+                    }
+                    layer.setErrorMap(indexMapOut, i, s);
                 }
             }
-            layer.setErrorMap(indexMapOut, i, s);
-        }
+        };
     }
 
     private Matrix calcMatrixConvError(final Matrix matrix, final Matrix kernel){
@@ -371,11 +397,11 @@ public class CNN implements Serializable{
 
     /**
      *
-     * @param lable - эталонное значение выхода
+     * @param label - эталонное значение выхода
      * @param indexMapOut - номер элемента группового обучения
      * @return сравнение полученного от сети значения с эталонным
      */
-    private boolean calcOutErrors(double[] lable, int indexMapOut){
+    private boolean calcOutErrors(double[] label, int indexMapOut){
         Layer outLayer = layers.get(layers.size() - 1); // выходной слой
         double[] answer = new double[outLayer.getMapOutNumber()];
 
@@ -386,26 +412,26 @@ public class CNN implements Serializable{
 
         int mapSize = outLayer.getMapOutNumber();
         for (int i = 0; i < mapSize; i++) {
-            double value = answer[i] * (1 - answer[i]) * (lable[i] - answer[i]);
+            double value = answer[i] * (1 - answer[i]) * (label[i] - answer[i]);
             outLayer.setErrorValue(indexMapOut, i, 0, 0, value);
         }
 
-        return isRightLable(answer, lable);
+        return isRightLabel(answer, label);
     }
 
     /**
      * Сравнение полученного от нейронной сети значения с эталонным значением и возврат результата в виде true / false
      * @param answer - результат распознавания полученный от нейронной сети
-     * @param lable - эталонное значение выхода
+     * @param label - эталонное значение выхода
      * @return - сравнение полученного от сети значения с эталонным
      */
-    private boolean isRightLable(double[] answer, double[] lable){
-        int lableIndex = 0;
+    private boolean isRightLabel(double[] answer, double[] label){
+        int labelIndex = 0;
         boolean repeat = true;
 
-        for (int i = 0; i < lable.length & repeat; i++) {
-            if (Objects.equals(lable[i], 1.0)){
-                lableIndex = i;
+        for (int i = 0; i < label.length & repeat; i++) {
+            if (Objects.equals(label[i], 1.0)){
+                labelIndex = i;
                 repeat = false;
             }
         }
@@ -418,7 +444,7 @@ public class CNN implements Serializable{
                 max = answer[i];
             }
         }
-        return Objects.equals(lableIndex, answerIndex);
+        return Objects.equals(labelIndex, answerIndex);
     }
 
     /**
@@ -442,29 +468,38 @@ public class CNN implements Serializable{
      * @param layerPrev - предыдущий слой (входной / субдескритизирующий)
      */
     private void updateKernel(final Layer layer, final Layer layerPrev){
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                Matrix kernelNew = null;
+        final int batchsize = this.batchsize;
+        final double lambda = this.lambda;
+        final double alpha = this.alpha;
 
-                for (int k = 0; k < this.batchsize; k++) {
-                    if (kernelNew != null){
-                        Matrix kernelNewCur = sum(layerPrev.getMap(k, j), layer.getError(k, i));
-                        kernelNew = MatrixOperation.operation(kernelNew, kernelNewCur, MatrixOperation.Op.SUM);
-                    }
-                    else {
-                        kernelNew = sum(layerPrev.getMap(k, j), layer.getError(k, i));
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                        Matrix kernelNew = null;
+
+                        for (int k = 0; k < batchsize; k++) {
+                            if (kernelNew != null){
+                                Matrix kernelNewCur = sum(layerPrev.getMap(k, j), layer.getError(k, i));
+                                kernelNew = MatrixOperation.operation(kernelNew, kernelNewCur, MatrixOperation.Op.SUM);
+                            }
+                            else {
+                                kernelNew = sum(layerPrev.getMap(k, j), layer.getError(k, i));
+                            }
+                        }
+
+                        Matrix kernel = layer.getKernel(j,i);
+                        kernel = MatrixOperation.multiply(kernel, 1.0 - lambda * alpha);
+                        kernelNew = MatrixOperation.divide(kernelNew, batchsize);
+                        kernelNew = MatrixOperation.multiply(kernelNew, alpha);
+
+                        kernelNew = MatrixOperation.operation(kernel, kernelNew, MatrixOperation.Op.SUM);
+                        layer.setKernelMatrix(j, i, kernelNew);
                     }
                 }
-
-                Matrix kernel = layer.getKernel(j,i);
-                kernel = MatrixOperation.multiply(kernel, 1.0 - this.lambda * this.alpha);
-                kernelNew = MatrixOperation.divide(kernelNew, this.batchsize);
-                kernelNew = MatrixOperation.multiply(kernelNew, this.alpha);
-
-                kernelNew = MatrixOperation.operation(kernel, kernelNew, MatrixOperation.Op.SUM);
-                layer.setKernelMatrix(j, i, kernelNew);
             }
-        }
+        };
     }
 
     /**
@@ -472,27 +507,35 @@ public class CNN implements Serializable{
      * @param layer - сверточный / выходной слой
      */
     private void updateT(final Layer layer){
+        final int batchsize = this.batchsize;
+        final double alpha = this.alpha;
         List<List<Matrix>> error  = layer.getError();
-        for (int i = 0; i < layer.getMapOutNumber(); i++) {
-            int row = error.get(i).get(0).getRowNum();
-            int column = error.get(i).get(0).getColNum();
-            Matrix result = new Matrix(new Size(row, column));
 
-            for (int j = 0; j < row; j++) {
-                for (int k = 0; k < column; k++) {
-                    double value = 0;
+        ThreadTaskManager threadTaskManager = new ThreadTaskManager(layer.getMapOutNumber()) {
+            @Override
+            public void start(int start, int end) {
+                for (int i = start; i < end; i++) {
+                    int row = error.get(i).get(0).getRowNum();
+                    int column = error.get(i).get(0).getColNum();
+                    Matrix result = new Matrix(new Size(row, column));
 
-                    for (List<Matrix> anError : error) {
-                        value += anError.get(i).getValue(j, k);
+                    for (int j = 0; j < row; j++) {
+                        for (int k = 0; k < column; k++) {
+                            double value = 0;
+
+                            for (List<Matrix> anError : error) {
+                                value += anError.get(i).getValue(j, k);
+                            }
+                            result.setValue(j, k, value);
+                        }
                     }
-                    result.setValue(j, k, value);
+
+                    double newValueT = MatrixOperation.sumAllCells(result) / batchsize;
+                    newValueT = layer.getT(i) + alpha * newValueT;
+                    layer.setTValue(i, newValueT);
                 }
             }
-
-            double newValueT = MatrixOperation.sumAllCells(result) / this.batchsize;
-            newValueT = layer.getT(i) + this.alpha * newValueT;
-            layer.setTValue(i, newValueT);
-        }
+        };
     }
 
     /**
@@ -522,7 +565,7 @@ public class CNN implements Serializable{
                 answer[j] = layerOut.getMap(0, j).getValue(0,0);
             }
 
-            boolean right = isRightLable(answer, testData.getLabel(i));
+            boolean right = isRightLabel(answer, testData.getLabel(i));
             if (right){
                 testPrecision.increase();
             }

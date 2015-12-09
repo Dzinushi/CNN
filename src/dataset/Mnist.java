@@ -5,8 +5,8 @@ import java.io.*;
 
 
 public class Mnist implements DataBase{
-    private double[][] lable;
-    private double[][] datas;
+    private double[][] label;
+    private double[][] data;
 
     private int size;
     private int imageWidth;
@@ -43,8 +43,8 @@ public class Mnist implements DataBase{
         int numRows = imageFile.readInt();
         int numCols = imageFile.readInt();
 
-        lable = new double[number][10];
-        datas = new double[number][numRows * numCols];
+        label = new double[number][10];
+        data = new double[number][numRows * numCols];
 
         imageWidth = numCols;
         imageHeight = numRows;
@@ -58,17 +58,17 @@ public class Mnist implements DataBase{
 
         System.out.println("Start read Data Base ...");
         int imageForRead = number > numImages ? numImages : number;
-        System.out.printf("All datas: %d\n", imageForRead);
+        System.out.printf("All data: %d\n", imageForRead);
 
         size = 0;
         for (int i = 0; i < imageForRead && lableFile.available() > 0; i++) {
             for (int rowIdx = 0, index = 0; rowIdx < numRows; rowIdx++) {
                 for (int colIdx = 0; colIdx < numCols; colIdx++, index++) {
-                    datas[i][index] = imageFile.readUnsignedByte();
+                    data[i][index] = imageFile.readUnsignedByte();
                 }
             }
 
-            lable[i][lableFile.readByte()] = 1;
+            label[i][lableFile.readByte()] = 1;
             size++;
         }
 
@@ -79,17 +79,17 @@ public class Mnist implements DataBase{
 
     private void normalizeData(){
         System.out.println("Start normalize data ...");
-        double max = Util.max(datas);
-        datas = Util.normalize(datas, max);
+        double max = Util.max(data);
+        data = Util.normalize(data, max);
         System.out.println("End normalize data");
     }
 
     public double[] getData(int index){
-        return datas[index];
+        return data[index];
     }
 
     public double[] getLabel(int index){
-        return lable[index];
+        return label[index];
     }
 
     public int getSize(){

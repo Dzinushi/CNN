@@ -26,8 +26,8 @@ public class TrainNet {
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize
-        cnn.train(trainData, 2);    // iterations
-        cnn.save("net_mnist");
+        cnn.train(trainData, 5);    // iterations
+        cnn.save("net_mnist_60000");
 
         System.exit(0);
     }

@@ -13,7 +13,7 @@ public class TestNet {
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("net_mnist.cnn");
+            cnn = cnn.read("net_mnist_10000.cnn");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
