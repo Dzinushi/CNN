@@ -5,16 +5,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public abstract class ThreadTaskManager {
+public abstract class TaskToThread {
     private static int cpu = Runtime.getRuntime().availableProcessors();
     private static ExecutorService exService = Executors.newFixedThreadPool(cpu);
     private static int length;
 
     public abstract void start(int start, int end);
 
-    public ThreadTaskManager(int length){
-        ThreadTaskManager.length = length;
-        threadCommand(cpu);
+    public TaskToThread(int length){
+        TaskToThread.length = length;
+        threadCommand();
     }
 
     private static void run(Runnable command){
@@ -25,16 +25,13 @@ public abstract class ThreadTaskManager {
         exService.shutdown();
     }
 
-    private void threadCommand(int cpu){
-        final int[][] steps = calcCpuLength(cpu);
+    private void threadCommand(){
+        final int[][] steps = calcCpuLength();
 
         CountDownLatch count = new CountDownLatch(steps.length);
-        for (int i = 0; i < steps.length; i++) {
-            final int cpuIndex = i;
-            final int start = steps[cpuIndex][0];
-            final int end = steps[cpuIndex][1];
+        for (int[] step : steps) {
             Runnable command = () -> {
-                start(start, end);
+                start(step[0], step[1]);
                 count.countDown();
             };
             run(command);
@@ -47,7 +44,7 @@ public abstract class ThreadTaskManager {
         }
     }
 
-    private static int[][] calcCpuLength(int cpu){
+    private static int[][] calcCpuLength(){
         int[][] steps = null;
 
         // число итераций меньше числа процессоров

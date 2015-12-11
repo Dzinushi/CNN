@@ -3,6 +3,7 @@ package test;
 import java.io.IOException;
 import dataset.Mnist;
 import net.CNN;
+import util.TaskToThread;
 
 public class TestNet {
     public static void main(String[] args) throws IOException {
@@ -13,12 +14,13 @@ public class TestNet {
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("net_mnist_10000.cnn");
+            cnn = cnn.read("net_mnist_60000_new.cnn");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
         cnn.test(testData);
-        System.exit(0);
+
+        TaskToThread.stop();
     }
 }

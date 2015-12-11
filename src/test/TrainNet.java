@@ -5,6 +5,7 @@ import net.CNN;
 import net.Layer;
 import net.CreateLayer;
 import util.Size;
+import util.TaskToThread;
 
 import java.io.IOException;
 
@@ -26,9 +27,9 @@ public class TrainNet {
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);      // batchsize
-        cnn.train(trainData, 5);    // iterations
-        cnn.save("net_mnist_60000");
+        cnn.train(trainData, 100);    // iterations
+        cnn.save("net_mnist_60000_new");
 
-        System.exit(0);
+        TaskToThread.stop();
     }
 }
