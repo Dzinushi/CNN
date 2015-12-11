@@ -17,13 +17,13 @@ public class ContinueTrainNet {
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("net_mnist_60000_new.cnn");
+            cnn = cnn.read("net_mnist_60000.cnn");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
         cnn.train(trainData, 100);
-        cnn.save("net_mnist_60000_new");
+        cnn.save("net_mnist_60000");
 
         TaskToThread.stop();
     }
