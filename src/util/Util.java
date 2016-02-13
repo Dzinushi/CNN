@@ -4,16 +4,29 @@ import java.util.*;
 
 public class Util {
 
-    public static double max(final double[][] data){
-        double max = Integer.MIN_VALUE;
+    public static int max(final double[][] data){
+        int max = Integer.MIN_VALUE;
 
         for (double[] aData : data) {
             for (double anAData : aData) {
-                if (anAData > max) max = anAData;
+                if (anAData > max) max = (int)anAData;
             }
         }
         
         return max;
+    }
+
+    public static int maxIndex(final double[] datas){
+        double max = Double.MIN_VALUE;
+        int index = 0;
+        for (int i = 0; i < datas.length; i++) {
+            if (datas[i] > max){
+                max = datas[i];
+                index = i;
+            }
+        }
+
+        return index;
     }
 
     public static double[][] normalize(double[][] data, double max){

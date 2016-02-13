@@ -15,15 +15,17 @@ public class ContinueTrainNet {
         Mnist trainData = new Mnist();
         trainData.load(imagesTrain, labelsTrain, 60000);
 
+        String netName = "net_mnist_60000_relu";
+
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("net_mnist_60000.cnn");
+            cnn = cnn.read(netName);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
         cnn.train(trainData, 100);
-        cnn.save("net_mnist_60000");
+        cnn.save(netName);
 
         TaskToThread.stop();
     }

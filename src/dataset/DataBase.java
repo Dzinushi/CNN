@@ -15,4 +15,5 @@ public interface DataBase {
     int getSize();
     int getImageWidth();
     int getImageHeight();
+    int getMaxValue();
 }

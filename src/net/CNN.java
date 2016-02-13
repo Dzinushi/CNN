@@ -17,6 +17,8 @@ public class CNN implements Serializable{
     private double alpha;
     private TimeCNN timeTraining;
 
+    private static final long serialVersionUID = -2606860604729216288L;
+
     // Задано константное значение alpha
     public CNN(){
         batchsize = 0;
@@ -85,7 +87,7 @@ public class CNN implements Serializable{
         Precision precision = new Precision();
         precision.setCount(trainData.getSize());
 
-        // Запус функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
+        // Запуск функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
         StopTrain stop = new StopTrain();
         Thread thread = new Thread(stop);
         thread.start();
@@ -192,7 +194,7 @@ public class CNN implements Serializable{
                             s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
                         }
                     }
-                    s = activation(s, layer.getT(i));
+                    s = activation(s, layer.getT(i), ActivationFunction.function.SIGM);
                     layer.setMapOutValue(indexMapOut, i, s);
                 }
             }
@@ -211,6 +213,7 @@ public class CNN implements Serializable{
             public void start(int start, int end) {
                 for (int i = start; i < end; i++) {
                     Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
+                    //sampMatrix = activation(sampMatrix, 0, ActivationFunction.function.RELU);
                     layer.setMapOutValue(indexMapOut, i, sampMatrix);
                 }
             }
@@ -238,7 +241,7 @@ public class CNN implements Serializable{
                             s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
                         }
                     }
-                    s = activation(s, layer.getT(i));
+                    s = activation(s, layer.getT(i), ActivationFunction.function.SIGM);
                     layer.setMapOutValue(indexMapOut, i, s);
                 }
             }
@@ -278,10 +281,11 @@ public class CNN implements Serializable{
      * @param tValue - пороговое значение
      * @return - результат апроксимации на кривую (сигмоида или гиперболический тангенс)
      */
-    private Matrix activation(final Matrix s, double tValue){
+    private Matrix activation(final Matrix s, double tValue, ActivationFunction.function functionName){
         for (int i = 0; i < s.getRowNum(); i++) {
             for (int j = 0; j < s.getColNum(); j++) {
-                s.setValue(i, j, ActivationFunction.sigm(s.getValue(i,j) + tValue));
+				double value = s.getValue(i,j) + tValue;
+                s.setValue(i, j, ActivationFunction.activation(functionName, value));
             }
         }
         return s;
@@ -578,6 +582,26 @@ public class CNN implements Serializable{
     }
 
     /**
+     * Test data and return array
+     * @param data
+     * @param imageSize
+     * @return
+     */
+    public double[] test(double[] data, Size imageSize){
+
+        trainAllLayers(data, imageSize, 0);
+
+        Layer layerOut = layers.get(layers.size() - 1);
+        double[] answer = new double[layerOut.getMapOutNumber()];
+
+        for (int j = 0; j < layerOut.getMapOutNumber(); j++) {
+            answer[j] = layerOut.getMap(0, j).getValue(0,0);
+        }
+
+        return answer;
+    }
+
+    /**
      * Сериализация объекта CNN в файл с именем "filename" и расширением ".cnn"
      * @param filename - имя файла сериализованного объекта CNN
      * @throws IOException - ошибка сохранения или открытия файла
@@ -598,7 +622,7 @@ public class CNN implements Serializable{
      * @throws ClassNotFoundException - несуществующий класс
      */
     public CNN read(String filepath) throws IOException, ClassNotFoundException {
-        FileInputStream fis = new FileInputStream(filepath);
+        FileInputStream fis = new FileInputStream(filepath + ".cnn");
         ObjectInputStream oin = new ObjectInputStream(fis);
         return (CNN) oin.readObject();
     }
