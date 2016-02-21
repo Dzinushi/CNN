@@ -8,7 +8,6 @@ import java.util.Objects;
 import dataset.DataBase;
 import util.*;
 
-
 public class CNN implements Serializable{
 
     private int batchsize;
@@ -16,6 +15,10 @@ public class CNN implements Serializable{
     private double lambda;
     private double alpha;
     private TimeCNN timeTraining;
+    private Precision precision;
+
+    private String name;
+    private boolean autosave;
 
     private static final long serialVersionUID = -2606860604729216288L;
 
@@ -26,6 +29,8 @@ public class CNN implements Serializable{
         alpha = 0.5;
         layers = new ArrayList<>();
         timeTraining = new TimeCNN();
+        name = "";
+        autosave = false;
     }
 
     /**
@@ -42,7 +47,7 @@ public class CNN implements Serializable{
 
             layer = this.layers.get(i);
 
-            switch (layer.getType()){
+            switch (layer.getType()) {
 
                 case INPUT:
                     layer.setMapOutSize(batchSize);
@@ -81,7 +86,7 @@ public class CNN implements Serializable{
      * @param trainData - база данных для обучения сети
      * @param iteration - количество итераций обучения
      */
-    public void train(DataBase trainData, int iteration){
+    public void train(DataBase trainData, DataBase testData, int iteration){
         int numbatches = trainData.getSize() / batchsize;
 
         Precision precision = new Precision();
@@ -93,6 +98,9 @@ public class CNN implements Serializable{
         thread.start();
 
         System.out.printf("\nStart training\n");
+
+        // Лучшая точность сети
+        Precision bestPrecision = new Precision();
 
         int[] randIndexes = Util.randPerm(trainData.getSize());
         for (int i = 0; i < iteration & !stop.isEnd(); i++) {
@@ -114,11 +122,21 @@ public class CNN implements Serializable{
                     }
                     z++;
                 }
-
                 update();
             }
 
-            LogCNN.printTrainInfo(precision, timeTraining.getTimeLast());
+            // Проверка на тестируемой выборке. Если результат ухудшился, сохраняем лучший
+            Precision testPrecision = test(testData);
+            if (testPrecision.getValue() > bestPrecision.getValue() && autosave){
+                bestPrecision = testPrecision;
+                try {
+                    save(name);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            LogCNN.printTrainInfo(precision, testPrecision, timeTraining.getTimeLast());
             precision.resetValue();
         }
 
@@ -213,7 +231,6 @@ public class CNN implements Serializable{
             public void start(int start, int end) {
                 for (int i = start; i < end; i++) {
                     Matrix sampMatrix = MatrixOperation.compression(layerPrev.getMap(indexMapOut, i), layer.getCompressSise());
-                    //sampMatrix = activation(sampMatrix, 0, ActivationFunction.function.RELU);
                     layer.setMapOutValue(indexMapOut, i, sampMatrix);
                 }
             }
@@ -550,13 +567,9 @@ public class CNN implements Serializable{
      * для распознавания
      */
     public Precision test(DataBase testData){
-        System.out.println("\nStart testing");
-
-        Precision testPrecision = new Precision();
-        testPrecision.setCount(testData.getSize());
+        precision = new Precision();
+        precision.setCount(testData.getSize());
         Size imageSize = new Size(testData.getImageWidth(), testData.getImageHeight());
-        TimeCNN timeTest = new TimeCNN();
-        timeTest.start();
 
         for (int i = 0; i < testData.getSize(); i++) {
 
@@ -571,35 +584,14 @@ public class CNN implements Serializable{
 
             boolean right = isRightLabel(answer, testData.getLabel(i));
             if (right){
-                testPrecision.increase();
+                precision.increase();
             }
 
         }
 
-        LogCNN.printTestInfo(testPrecision, timeTest.getTimeLast());
-
-        return testPrecision;
+        return precision;
     }
 
-    /**
-     * Test data and return array
-     * @param data
-     * @param imageSize
-     * @return
-     */
-    public double[] test(double[] data, Size imageSize){
-
-        trainAllLayers(data, imageSize, 0);
-
-        Layer layerOut = layers.get(layers.size() - 1);
-        double[] answer = new double[layerOut.getMapOutNumber()];
-
-        for (int j = 0; j < layerOut.getMapOutNumber(); j++) {
-            answer[j] = layerOut.getMap(0, j).getValue(0,0);
-        }
-
-        return answer;
-    }
 
     /**
      * Сериализация объекта CNN в файл с именем "filename" и расширением ".cnn"
@@ -625,5 +617,41 @@ public class CNN implements Serializable{
         FileInputStream fis = new FileInputStream(filepath + ".cnn");
         ObjectInputStream oin = new ObjectInputStream(fis);
         return (CNN) oin.readObject();
+    }
+
+    public void netName(String string){
+        this.name = string;
+    }
+
+    public Precision getPrecision(){
+        return precision;
+    }
+
+    public int getBatchsize(){
+        return batchsize;
+    }
+
+    public List<Layer> getLayers(){
+        return layers;
+    }
+
+    public double getLambda(){
+        return lambda;
+    }
+
+    public double getAlpha(){
+        return alpha;
+    }
+
+    public void setName(String name){
+        this.name = name;
+    }
+
+    public boolean isAutosave() {
+        return autosave;
+    }
+
+    public void autosave(boolean autosave) {
+        this.autosave = autosave;
     }
 }

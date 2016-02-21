@@ -1,13 +1,13 @@
 package test;
 
+
 import dataset.Mnist;
 import net.CNN;
 import util.TaskToThread;
 
 import java.io.IOException;
 
-public class ContinueTrainNet {
-
+public class ContiniueTrainBigNet {
     public static void main(String[] args) throws Exception {
 
         String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
@@ -16,10 +16,10 @@ public class ContinueTrainNet {
         String labelTest = "database/MNIST/test-labels.idx1-ubyte";
 
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 60000);
+        trainData.load(imagesTrain, labelsTrain, 10000);
         Mnist testData = new Mnist();
         testData.load(imagesTest, labelTest, 10000);
-        String netName = "";
+        String netName = "net_mnist_10000(1-6-0.5-12-0.5-10)";
 
         CNN cnn = new CNN();
         try {

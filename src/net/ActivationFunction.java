@@ -21,7 +21,7 @@ public class ActivationFunction {
     }
 
     private static double hyptan(double x){
-        return (Math.pow(Math.E, x) - Math.pow(Math.E, -x)) / (Math.pow(Math.E, x) + Math.pow(Math.E, -x));
+        return (Math.pow(Math.E, 2*x) - 1) / (Math.pow(Math.E, 2*x) + 1);
     }
 
     private static double sigm(double x){
@@ -29,9 +29,6 @@ public class ActivationFunction {
     }
 
     private static double relu(double x){
-        if (x > 0.0){
-            return x;
-        }
-        return 0.01*x;//Math.log(1 + Math.pow(Math.E, x));
+        return (x > 0.0 ? x : 0.01*x);
     }
 }

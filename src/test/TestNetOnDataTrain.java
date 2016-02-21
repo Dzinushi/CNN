@@ -3,7 +3,10 @@ package test;
 
 import dataset.Mnist;
 import net.CNN;
+import util.LogCNN;
+import util.Precision;
 import util.TaskToThread;
+import util.TimeCNN;
 
 import java.io.IOException;
 
@@ -21,7 +24,13 @@ public class TestNetOnDataTrain {
             e.printStackTrace();
         }
 
-        cnn.test(testData);
+        System.out.println("\nStart testing");
+        TimeCNN timeTest = new TimeCNN();
+        timeTest.start();
+
+        Precision precision = cnn.test(testData);
+
+        LogCNN.printTestInfo(precision, timeTest.getTimeLast());
 
         TaskToThread.stop();
     }

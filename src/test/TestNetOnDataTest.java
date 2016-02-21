@@ -3,7 +3,10 @@ package test;
 import java.io.IOException;
 import dataset.Mnist;
 import net.CNN;
+import util.LogCNN;
+import util.Precision;
 import util.TaskToThread;
+import util.TimeCNN;
 
 public class TestNetOnDataTest {
     public static void main(String[] args) throws IOException {
@@ -14,12 +17,18 @@ public class TestNetOnDataTest {
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("net_mnist_60000_relu");
+            cnn = cnn.read("");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
-        cnn.test(testData);
+        System.out.println("\nStart testing");
+        TimeCNN timeTest = new TimeCNN();
+        timeTest.start();
+
+        Precision precision = cnn.test(testData);
+
+        LogCNN.printTestInfo(precision, timeTest.getTimeLast());
 
         TaskToThread.stop();
     }

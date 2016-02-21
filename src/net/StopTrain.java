@@ -24,4 +24,8 @@ public class StopTrain implements Runnable{
     public boolean isEnd(){
         return end;
     }
+
+    public void setEnd() {
+        end = true;
+    }
 }
