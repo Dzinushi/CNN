@@ -20,6 +20,8 @@ public class CNN implements Serializable{
     private String name;
     private boolean autosave;
 
+    private boolean autoencoder;
+
     private static final long serialVersionUID = -2606860604729216288L;
 
     // Задано константное значение alpha
@@ -102,7 +104,7 @@ public class CNN implements Serializable{
         // Лучшая точность сети
         Precision bestPrecision = new Precision();
 
-        int[] randIndexes = Util.randPerm(trainData.getSize());
+//        int[] randIndexes = Util.randPerm(trainData.getSize());
         for (int i = 0; i < iteration & !stop.isEnd(); i++) {
             this.timeTraining.start();
 
@@ -125,7 +127,7 @@ public class CNN implements Serializable{
                 update();
             }
 
-            // Проверка на тестируемой выборке. Если результат ухудшился, сохраняем лучший
+            // Проверка на тестируемой выборке. Сохранение лучшего результата
             Precision testPrecision = test(testData);
             if (testPrecision.getValue() > bestPrecision.getValue() && autosave){
                 bestPrecision = testPrecision;
@@ -396,6 +398,19 @@ public class CNN implements Serializable{
                             s = calcMatrixConvError(mapError, MatrixOperation.rot180(kernel));
                         }
                     }
+
+                    // нормализация ошибки с использованием RELU
+//                    for (int j = 0; j < s.getRowNum(); j++) {
+//                        for (int k = 0; k < s.getColNum(); k++) {
+//                            if (s.getValue(j,k) <= 0){
+//                                s.setValue(j,k,0);
+//                            }
+//                            else {
+//                                s.setValue(j,k,1);
+//                            }
+//                        }
+//                    }
+
                     layer.setErrorMap(indexMapOut, i, s);
                 }
             }
@@ -653,5 +668,13 @@ public class CNN implements Serializable{
 
     public void autosave(boolean autosave) {
         this.autosave = autosave;
+    }
+
+    public boolean isAutoencoder() {
+        return autoencoder;
+    }
+
+    public void setAutoencoder(boolean autoencoder) {
+        this.autoencoder = autoencoder;
     }
 }

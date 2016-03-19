@@ -14,9 +14,9 @@ public class TrainBigNet {
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
         layers.createLayer(Layer.inputLayer(new Size(28, 28)));
-        layers.createLayer(Layer.convLayer(6, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(4, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(12, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(8, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
         layers.createLayer(Layer.outputLayer(10));
 
@@ -25,7 +25,7 @@ public class TrainBigNet {
         String imagesTest = "database/MNIST/test-images.idx3-ubyte";
         String labelTest = "database/MNIST/test-labels.idx1-ubyte";
 
-        String netName = "net_mnist_10000(1-6-0.5-12-0.5-10)";
+        String netName = "test_relu_cnn";
 
         Mnist trainData = new Mnist();
         trainData.load(imagesTrain, labelsTrain, 10000);
@@ -35,8 +35,8 @@ public class TrainBigNet {
         CNN cnn = new CNN();
         cnn.setup(layers, 50);                  // batchsize
         cnn.setName(netName);
-        cnn.autosave(true);
-        cnn.train(trainData, testData, 100);    // iterations
+        cnn.autosave(false);
+        cnn.train(trainData, testData, 10);    // iterations
 
         TaskToThread.stop();
     }

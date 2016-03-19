@@ -13,8 +13,16 @@ public class Matrix implements Serializable{
         data[indexRow][indexCol] = value;
     }
 
+    public void setRow(int index, double[] row){
+        System.arraycopy(row, 0, data[index], 0, row.length);
+    }
+
     public double getValue(final int indexRow,final int indexColumn){
         return data[indexRow][indexColumn];
+    }
+
+    public double[] getRow(int index){
+        return data[index];
     }
 
     public int getRowNum(){

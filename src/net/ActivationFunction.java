@@ -29,6 +29,7 @@ public class ActivationFunction {
     }
 
     private static double relu(double x){
-        return (x > 0.0 ? x : 0.01*x);
+        //return (x >= 0.0 ? x : 0.01*x);
+        return (x >= 0.0 ? x : 0);
     }
 }
