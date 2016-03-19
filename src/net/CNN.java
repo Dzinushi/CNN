@@ -20,7 +20,7 @@ public class CNN implements Serializable{
     private String name;
     private boolean autosave;
 
-    private boolean autoencoder;
+    private boolean usingAutoencoder;
 
     private static final long serialVersionUID = -2606860604729216288L;
 
@@ -162,7 +162,13 @@ public class CNN implements Serializable{
                     break;
 
                 case CONVOLUTION:
-                    trainConvLayer(layer, layerPrev, indexMapOut);
+                    if (usingAutoencoder){
+                        Autoencoder autoencoder = new Autoencoder();
+                        autoencoder.start(layer, layerPrev, indexMapOut, 50);
+                    }
+                    else {
+                        trainConvLayer(layer, layerPrev, indexMapOut);
+                    }
                     break;
 
                 case SUBSAMPLING:
@@ -670,11 +676,11 @@ public class CNN implements Serializable{
         this.autosave = autosave;
     }
 
-    public boolean isAutoencoder() {
-        return autoencoder;
+    public boolean isUsingAutoencoder() {
+        return usingAutoencoder;
     }
 
-    public void setAutoencoder(boolean autoencoder) {
-        this.autoencoder = autoencoder;
+    public void setUsingAutoencoder(boolean usingAutoencoder) {
+        this.usingAutoencoder = usingAutoencoder;
     }
 }

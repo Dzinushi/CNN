@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Layer implements Serializable{
-    public LayerType type;
+    private LayerType type;
     private int mapOutNumber;
     private Size mapsSize;
     private Size kernelSize;
@@ -22,6 +22,30 @@ public class Layer implements Serializable{
 
     enum LayerType{
         INPUT, OUTPUT, CONVOLUTION, SUBSAMPLING
+    }
+
+    private Layer(){
+        mapOutNumber = 0;
+        t = new double[0];
+    }
+
+    Layer(Layer layer){
+        this.type = layer.getType();
+        this.mapOutNumber = layer.getMapOutNumber();
+        this.mapsSize = layer.getMapsSize();
+        this.kernelSize = layer.getKernelSize();
+        this.compressSise = layer.getCompressSise();
+        this.kernel = layer.getKernel();
+        this.error = layer.getError();
+        this.t = layer.getT();
+    }
+
+    private double[] getT() {
+        return t;
+    }
+
+    private List<List<Matrix>> getKernel() {
+        return kernel;
     }
 
     // Создание входного слоя

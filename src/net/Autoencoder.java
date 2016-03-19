@@ -1,65 +1,79 @@
 package net;
 
-import dataset.Mnist;
 import util.Matrix;
 import util.MatrixOperation;
 import util.Size;
-import util.TaskToThread;
 
-import java.io.IOException;
+class Autoencoder {
 
-public class Autoencoder {
-
-    public static void main(String[] args) throws IOException {
-        CreateLayer layers = new CreateLayer();
-        layers.createLayer(Layer.inputLayer(new Size(28, 28)));
-        layers.createLayer(Layer.convLayer(4, new Size(5, 5)));
-        layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(8, new Size(5, 5)));
-        layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.outputLayer(10));
-
-        String imagesTrain = "database/MNIST/train-images.idx3-ubyte";
-        String labelsTrain = "database/MNIST/train-labels.idx1-ubyte";
-        String imagesTest = "database/MNIST/test-images.idx3-ubyte";
-        String labelTest = "database/MNIST/test-labels.idx1-ubyte";
-
-        String netName = "test_relu_cnn";
-
-        Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 10000);
-        Mnist testData = new Mnist();
-        testData.load(imagesTest, labelTest, 10000);
-
-        CNN cnn = new CNN();
-        cnn.setup(layers, 50);                  // batchsize
-        cnn.setName(netName);
-        cnn.autosave(false);
-        cnn.train(trainData, testData, 10);    // iterations
-
-        TaskToThread.stop();
+    private enum operation{
+        ENCODE,
+        DECODE
     }
 
-    private void train(Layer layer, Layer layerPrev, int indexMapOut){
-        TaskToThread taskToThread = new TaskToThread(layer.getMapOutNumber()) {
-            @Override
-            public void start(int start, int end) {
-                for (int i = start; i < end; i++) {
-                    Matrix s = null;
-                    for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                        if (s != null){
-                            Matrix sCur = encode(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                            s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
-                        }
-                        else {
-                            s = encode(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                        }
+    // layer        - сверточный слой
+    // layerPrev    - входной / субдескритизирующий слой
+    void start(Layer layer, Layer layerPrev, int indexMapOut, int epoch){
+
+        train(layer, layerPrev, indexMapOut, operation.ENCODE);
+        Layer layerOut = new Layer(layerPrev);
+        train(layerOut, layer, indexMapOut, operation.DECODE);
+
+        // изменение весов
+        // разобраться с порогами. Пороги должны быть для каждого слоя, а веса для обоих слоев одинаковые
+        for (int i = 0; i < epoch - 1; i++) {
+            train(layerOut, layerPrev, indexMapOut, operation.ENCODE);
+            train(layerPrev, layerOut, indexMapOut, operation.DECODE);
+            // изменение весов
+        }
+    }
+
+    private void train(Layer layer, Layer layerPrev, int indexMapOut, operation operation){
+
+        for (int i = 0; i < layer.getMapOutNumber(); i++) {
+            Matrix s = null;
+            for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
+                // если карта уже существует, то суммируем полученную и существующую карты
+                if (s != null){
+                    Matrix sCur;
+                    if (layer.getType() == Layer.LayerType.INPUT || layer.getType() == Layer.LayerType.SUBSAMPLING){
+                        sCur = operation(layerPrev.getMap(indexMapOut, j), layerPrev.getKernel(i, j), operation);
                     }
-                    s = activation(s, layer.getT(i), ActivationFunction.function.SIGM);
-                    layer.setMapOutValue(indexMapOut, i, s);
+                    else {
+                         sCur = operation(layerPrev.getMap(indexMapOut, j), layer.getKernel(j, i), operation);
+                    }
+                    s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
+                }
+                // если карты не существует, создаем карту
+                else {
+                    if (layer.getType() == Layer.LayerType.INPUT || layer.getType() == Layer.LayerType.SUBSAMPLING){
+                        s = operation(layerPrev.getMap(indexMapOut, j), layerPrev.getKernel(i, j), operation);
+                    }
+                    else {
+                        s = operation(layerPrev.getMap(indexMapOut, j), layer.getKernel(j, i), operation);
+                    }
                 }
             }
-        };
+            // вычисляем значение карты с учетом порогов и функции активации
+            if (layer.getType() == Layer.LayerType.INPUT || layer.getType() == Layer.LayerType.SUBSAMPLING){
+                s = activation(s, layerPrev.getT(i), ActivationFunction.function.SIGM);
+            }
+            else {
+                s = activation(s, layer.getT(i), ActivationFunction.function.SIGM);
+            }
+            layer.setMapOutValue(indexMapOut, i, s);
+        }
+    }
+
+    private Matrix operation(final Matrix map, final Matrix kernel, operation operation){
+        Matrix matrix;
+        if (operation == Autoencoder.operation.ENCODE){
+            matrix = encode(map, kernel);
+        }
+        else {
+            matrix = decode(map, kernel);
+        }
+        return matrix;
     }
 
     private Matrix encode(final Matrix map, final Matrix kernel){
@@ -111,5 +125,9 @@ public class Autoencoder {
             }
         }
         return s;
+    }
+
+    public void update(){
+
     }
 }

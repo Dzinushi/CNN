@@ -33,6 +33,14 @@ public class Matrix implements Serializable{
         return data[0].length;
     }
 
+    public void clearData(){
+        for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[i].length; j++) {
+                data[i][j] = 0.0;
+            }
+        }
+    }
+
     public String toString(){
         StringBuilder stringBuilder = new StringBuilder();
         for (double[] aData : data) {

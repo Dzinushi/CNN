@@ -28,14 +28,15 @@ public class TrainBigNet {
         String netName = "test_relu_cnn";
 
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 10000);
+        trainData.load(imagesTrain, labelsTrain, 100);
         Mnist testData = new Mnist();
-        testData.load(imagesTest, labelTest, 10000);
+        testData.load(imagesTest, labelTest, 100);
 
         CNN cnn = new CNN();
         cnn.setup(layers, 50);                  // batchsize
         cnn.setName(netName);
         cnn.autosave(false);
+        cnn.setUsingAutoencoder(true);
         cnn.train(trainData, testData, 10);    // iterations
 
         TaskToThread.stop();
