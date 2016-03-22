@@ -33,6 +33,7 @@ public class CNN implements Serializable{
         timeTraining = new TimeCNN();
         name = "";
         autosave = false;
+        usingAutoencoder = false;
     }
 
     /**
@@ -43,12 +44,9 @@ public class CNN implements Serializable{
     public void setup(CreateLayer layers, int batchSize){
         this.batchsize = batchSize;
         this.layers = layers.getListLayers();
-        Layer layer, layerPrev = null;
+        Layer layerPrev = null;
 
-        for (int i = 0; i < this.layers.size(); i++) {
-
-            layer = this.layers.get(i);
-
+        for (Layer layer : this.layers) {
             switch (layer.getType()) {
 
                 case INPUT:
@@ -91,27 +89,61 @@ public class CNN implements Serializable{
     public void train(DataBase trainData, DataBase testData, int iteration){
         int numbatches = trainData.getSize() / batchsize;
 
+//        int[] randIndexes = Util.randPerm(trainData.getSize());
+
+        // если активирован автоэнкодер, то запустить его на всех изображениях, подаваемых для обучения сети
+        if (usingAutoencoder) {
+            trainWithAutoencoder(50, numbatches, trainData);
+        }
+        trainNet(iteration, numbatches, trainData, testData);
+        LogCNN.printAllTime(this.timeTraining.getTimeAll());
+    }
+
+    private void trainWithAutoencoder(int iteration, int numbatches, DataBase trainData){
+        System.out.println("Start study net using autoencoder");
+
+        int index;
+        for (int i = 0; i < iteration; i++) {
+            this.timeTraining.start();
+
+            index = 0;
+            for (int j = 0; j < numbatches; j++) {
+                double[][] imageGroupList = new double[batchsize][];
+                List<Size> sizeGroupList = new ArrayList<>();
+                for (int k = 0; k < batchsize; k++) {
+                    double[] image = trainData.getData(index);
+                    imageGroupList[k] = image;
+                    Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
+                    sizeGroupList.add(imageSize);
+                    index++;
+                }
+                trainAllLayers(imageGroupList, sizeGroupList);
+            }
+        }
+        setUsingAutoencoder(false);
+    }
+
+    private void trainNet(int iteration, int numbatches, DataBase trainData, DataBase testData){
+        System.out.println("Start study neuron network");
+
         Precision precision = new Precision();
         precision.setCount(trainData.getSize());
+
+        // Лучшая точность сети
+        Precision bestPrecision = new Precision();
 
         // Запуск функции отлавливающей нажатие 'Enter' в консоли и прерывающей обучение
         StopTrain stop = new StopTrain();
         Thread thread = new Thread(stop);
         thread.start();
 
-        System.out.printf("\nStart training\n");
-
-        // Лучшая точность сети
-        Precision bestPrecision = new Precision();
-
-//        int[] randIndexes = Util.randPerm(trainData.getSize());
+        int index;
         for (int i = 0; i < iteration & !stop.isEnd(); i++) {
             this.timeTraining.start();
 
-            int z = 0;
+            index = 0;
             for (int j = 0; j < numbatches; j++) {
                 for (int k = 0; k < batchsize; k++) {
-                    int index = z;//randIndexes[k];
                     double[] image = trainData.getData(index);
                     double[] label = trainData.getLabel(index);
                     Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
@@ -122,7 +154,7 @@ public class CNN implements Serializable{
                     if (right){
                         precision.increase();
                     }
-                    z++;
+                    index++;
                 }
                 update();
             }
@@ -141,8 +173,40 @@ public class CNN implements Serializable{
             LogCNN.printTrainInfo(precision, testPrecision, timeTraining.getTimeLast());
             precision.resetValue();
         }
+    }
 
-        LogCNN.printAllTime(this.timeTraining.getTimeAll());
+    // обучение всех групповых элементов с ипользованием автоэнкодера
+    private void trainAllLayers(double[][] data, List<Size> imageSize){
+        Layer layerPrev = null;
+        for (Layer layer : layers) {
+            switch (layer.getType()){
+                case INPUT:
+                    for (int i = 0; i < this.batchsize; i++) {
+                        trainInputLayer(data[i], imageSize.get(i), i);
+                    }
+                    break;
+
+                case CONVOLUTION:
+                    for (int i = 0; i < this.batchsize; i++) {
+                        trainConvLayer(layer, layerPrev, i);
+                    }
+                    Autoencoder autoencoder = new Autoencoder();
+                    autoencoder.start(layer, layerPrev, this.batchsize);
+                    break;
+
+                case SUBSAMPLING:
+                    for (int i = 0; i < this.batchsize; i++) {
+                        trainSubLayer(layer, layerPrev, i);
+                    }
+                    break;
+
+                case OUTPUT:
+                    for (int i = 0; i < this.batchsize; i++) {
+                        trainOutLayer(layer, layerPrev, i);
+                    }
+            }
+            layerPrev = layer;
+        }
     }
 
     /**
@@ -152,23 +216,16 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void trainAllLayers(double[] data, Size imageSize, int indexMapOut){
-        Layer layer, layerPrev = null;
-        for (int i = 0; i < layers.size(); i++) {
-            layer = layers.get(i);
+        Layer layerPrev = null;
+        for (Layer layer : layers) {
 
-            switch (layers.get(i).getType()){
+            switch (layer.getType()){
                 case INPUT:
                     trainInputLayer(data, imageSize, indexMapOut);
                     break;
 
                 case CONVOLUTION:
-                    if (usingAutoencoder){
-                        Autoencoder autoencoder = new Autoencoder();
-                        autoencoder.start(layer, layerPrev, indexMapOut, 50);
-                    }
-                    else {
-                        trainConvLayer(layer, layerPrev, indexMapOut);
-                    }
+                    trainConvLayer(layer, layerPrev, indexMapOut);
                     break;
 
                 case SUBSAMPLING:
@@ -252,25 +309,7 @@ public class CNN implements Serializable{
      * @param indexMapOut - индекс элемента группового обучения
      */
     private void trainOutLayer(Layer layer, Layer layerPrev, int indexMapOut){
-        TaskToThread taskToThread = new TaskToThread(layer.getMapOutNumber()) {
-            @Override
-            public void start(int start, int end) {
-                for (int i = start; i < end; i++) {
-                    Matrix s = null;
-                    for (int j = 0; j < layerPrev.getMapOutNumber(); j++) {
-                        if (s != null){
-                            Matrix sCur = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                            s = MatrixOperation.operation(s, sCur, MatrixOperation.Op.SUM);
-                        }
-                        else {
-                            s = sum(layerPrev.getMap(indexMapOut, j), layer.getKernel(j,i));
-                        }
-                    }
-                    s = activation(s, layer.getT(i), ActivationFunction.function.SIGM);
-                    layer.setMapOutValue(indexMapOut, i, s);
-                }
-            }
-        };
+        trainConvLayer(layer, layerPrev, indexMapOut);
     }
 
     /**

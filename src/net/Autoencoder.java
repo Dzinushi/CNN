@@ -4,6 +4,8 @@ import util.Matrix;
 import util.MatrixOperation;
 import util.Size;
 
+import java.util.List;
+
 class Autoencoder {
 
     private enum operation{
@@ -11,21 +13,31 @@ class Autoencoder {
         DECODE
     }
 
-    // layer        - сверточный слой
-    // layerPrev    - входной / субдескритизирующий слой
-    void start(Layer layer, Layer layerPrev, int indexMapOut, int epoch){
+    /**
+     *
+     * @param hidden        - сверточный слой
+     * @param input         - входной / субдескритизирующий слой
+     * @param batchsize     - количество элементов групповой выборки
+     *
+     * input -> hidden  -> out - первый прогон по автоэнкодеру
+     * out   -> hidden1        - второй прогон по автоэнкодеру
+     * input    = x(0)
+     * hidden   = y(0)
+     * out      = x(1)
+     * hidden1  = y(1)
+     */
+    void start(Layer hidden, Layer input, int batchsize){
 
-        train(layer, layerPrev, indexMapOut, operation.ENCODE);
-        Layer layerOut = new Layer(layerPrev);
-        train(layerOut, layer, indexMapOut, operation.DECODE);
+        Layer out = new Layer(input);
+        Layer hidden1 = new Layer(hidden);
 
-        // изменение весов
-        // разобраться с порогами. Пороги должны быть для каждого слоя, а веса для обоих слоев одинаковые
-        for (int i = 0; i < epoch - 1; i++) {
-            train(layerOut, layerPrev, indexMapOut, operation.ENCODE);
-            train(layerPrev, layerOut, indexMapOut, operation.DECODE);
-            // изменение весов
+        for (int i = 0; i < batchsize; i++) {
+            train(out, hidden, i, operation.DECODE);
+            train(hidden1, out, i, operation.ENCODE);
         }
+
+        // обновление ядра / ядер свертки на сверточном слое hidden
+        update(input, hidden, out, hidden1, batchsize);
     }
 
     private void train(Layer layer, Layer layerPrev, int indexMapOut, operation operation){
@@ -127,7 +139,90 @@ class Autoencoder {
         return s;
     }
 
-    public void update(){
+    // исправить строку "double value ..."
+    private void update(Layer x0, Layer y0, Layer x1, Layer y1, int batchsize){
 
+        // обновление весов
+        // получение списка весовых коэффициентов для данного изображения
+        // i - номер элемента групповой выбрки
+        // j - номер карты элемента группповой выборки
+        for (int i = 0; i < y0.getKernel().size(); i++) {
+
+            List<Matrix> kernels = y0.getKernel().get(i);
+            for (int j = 0; j < kernels.size(); ++j) {
+
+                // формируем матрицу связей между входным и скрытым слоем, в которой число строк равно числу элементов входного слоя, а число столбцов числу элементов скрытого слоя
+                Matrix links = calcLinksLayers(x0, y0, x1, y1, batchsize, j);
+
+                Matrix kernel = kernels.get(j);
+                for (int k = 0; k < kernel.getRowNum(); k++) {
+                    for (int l = 0; l < kernel.getColNum(); l++) {
+
+//                        double value = kernel.getValue(k, l) + ((0.5 / batchsize) * );
+//                        kernel.setValue(k, l, value);
+                    }
+                }
+            }
+        }
+
+        // обновление порогов
+    }
+
+    private double getValue(Matrix matrix, int curValue, Size kernelSize, int kernelX, int kernelY, int kernelIndex){
+
+        // рассчитываем текущее положение верхнего левого элемента ядра на карте по индексу количества пройденных ядер свертки
+        int minX = kernelIndex / (matrix.getColNum() - kernelSize.x + 2);
+        int minY = kernelIndex % (matrix.getColNum() - kernelSize.y + 2);
+
+        // рассчитываем положение текущего элемента в матрице
+        int row =  curValue / matrix.getColNum();
+        int col = curValue % matrix.getColNum();
+
+        // возвращаем запрошенный элемент матрицы относительно его расположения в матрице ядра
+        return matrix.getValue(minX + kernelX, minY + kernelY);
+    }
+
+    private double getValue(Matrix matrix, int curValue){
+        int row =  curValue / matrix.getColNum();
+        int col = curValue % matrix.getColNum();
+        return matrix.getValue(row, col);
+    }
+
+    private Matrix calcLinksLayers(Layer x0, Layer y0, Layer x1, Layer y1, int batchsize, int indexMap) {
+        int row = x0.getMapsSize().x * x0.getMapsSize().y;
+        int column = y0.getMapsSize().x * y0.getMapsSize().y;
+        Matrix links = new Matrix(new Size(row, column));
+
+        Size kernelSize = y0.getKernelSize();
+        int x0Index = 0, y0Index = 0;
+
+        for (int j = 0; j < column; ) {
+            for (int i = 0; i < row; ) {
+
+                double value = 0.0;
+                int kernelSizeRow = y0.getKernelSize().x;
+                int kernelSizeCol = y0.getKernelSize().y;
+
+                // работаем с матрицей скрытого и входного слоев учитывая размерность матрицы весов
+                for (int k = 0; k < kernelSizeRow; k++) {
+                    for (int l = 0; l < kernelSizeCol; l++) {
+                        for (int m = 0; m < batchsize; m++) {
+                            double x0Value = getValue(x0.getMap(m, indexMap), x0Index, kernelSize, k, l, j);
+                            double y0Value = getValue(y0.getMap(m, indexMap), y0Index);
+                            double x1Value = getValue(x1.getMap(m, indexMap), x0Index, kernelSize, k, l, j);
+                            double y1Value = getValue(y1.getMap(m, indexMap), y0Index);
+                            value += (x0Value * y0Value) - (x1Value * y1Value);
+                        }
+                        links.setValue(i, j, value);
+                        x0Index++;
+                        i++;
+                    }
+                }
+                y0Index++;
+                j++;
+            }
+        }
+
+        return links;
     }
 }

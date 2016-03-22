@@ -40,11 +40,11 @@ public class Layer implements Serializable{
         this.t = layer.getT();
     }
 
-    private double[] getT() {
+    public double[] getT() {
         return t;
     }
 
-    private List<List<Matrix>> getKernel() {
+    public List<List<Matrix>> getKernel() {
         return kernel;
     }
 
