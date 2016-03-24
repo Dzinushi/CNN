@@ -20,6 +20,10 @@ public class Layer implements Serializable{
     private List<List<Matrix>> mapOut;  // набор карт
     private double[] t;                 // пороговые значения
 
+    public List<List<Matrix>> getMapOut() {
+        return mapOut;
+    }
+
     enum LayerType{
         INPUT, OUTPUT, CONVOLUTION, SUBSAMPLING
     }
@@ -29,15 +33,44 @@ public class Layer implements Serializable{
         t = new double[0];
     }
 
-    Layer(Layer layer){
+    Layer(Layer layer) {
+        copy(layer);
+    }
+
+    void copy(Layer layer){
         this.type = layer.getType();
         this.mapOutNumber = layer.getMapOutNumber();
-        this.mapsSize = layer.getMapsSize();
-        this.kernelSize = layer.getKernelSize();
-        this.compressSise = layer.getCompressSise();
-        this.kernel = layer.getKernel();
-        this.error = layer.getError();
+        if (layer.mapsSize != null) {
+            this.mapsSize = new Size(layer.getMapsSize());
+        }
+        if (layer.kernelSize != null) {
+            this.kernelSize = new Size(layer.getKernelSize());
+        }
+        if (layer.compressSise != null) {
+            this.compressSise = new Size(layer.getCompressSise());
+        }
+        this.kernel = copy(layer.getKernel());
+        this.error = copy(layer.getError());
+        this.mapOut = copy(layer.getMapOut());
         this.t = layer.getT();
+    }
+
+    private List<List<Matrix>> copy(List<List<Matrix>> datas){
+        if (datas != null) {
+            List<List<Matrix>> copyDatas = new ArrayList<>();
+            for (List<Matrix> data : datas) {
+                List<Matrix> copyMatrixes = new ArrayList<>();
+                for (Matrix aData : data) {
+                    Matrix copyMatrix = new Matrix(aData);
+                    copyMatrixes.add(copyMatrix);
+                }
+                copyDatas.add(copyMatrixes);
+            }
+            return copyDatas;
+        }
+        else {
+            return null;
+        }
     }
 
     public double[] getT() {

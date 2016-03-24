@@ -5,12 +5,18 @@ import java.io.Serializable;
 
 public class Size implements Serializable{
 
-    public final int x;
-    public final int y;
+    public int x;
+    public int y;
 
     public Size(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Size(Size size){
+        if (size != null) {
+            copy(size);
+        }
     }
 
     public String toString() {
@@ -29,5 +35,10 @@ public class Size implements Serializable{
         int x = this.x - size.x + append;
         int y = this.y - size.y + append;
         return new Size(x, y);
+    }
+
+    public void copy(Size mapsSize) {
+        this.x = mapsSize.x;
+        this.y = mapsSize.y;
     }
 }

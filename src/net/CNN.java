@@ -87,14 +87,14 @@ public class CNN implements Serializable{
      * @param iteration - количество итераций обучения
      */
     public void train(DataBase trainData, DataBase testData, int iteration){
-        int numbatches = trainData.getSize() / batchsize;
 
-//        int[] randIndexes = Util.randPerm(trainData.getSize());
+        int numbatches = trainData.getSize() / batchsize;
 
         // если активирован автоэнкодер, то запустить его на всех изображениях, подаваемых для обучения сети
         if (usingAutoencoder) {
             trainWithAutoencoder(50, numbatches, trainData);
         }
+        // обучение нейронной сети
         trainNet(iteration, numbatches, trainData, testData);
         LogCNN.printAllTime(this.timeTraining.getTimeAll());
     }

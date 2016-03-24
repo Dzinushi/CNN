@@ -36,7 +36,7 @@ public class TrainBigNet {
         cnn.setup(layers, 50);                  // batchsize
         cnn.setName(netName);
         cnn.autosave(false);
-        cnn.setUsingAutoencoder(false);
+        cnn.setUsingAutoencoder(true);
         cnn.train(trainData, testData, 10);    // iterations
 
         TaskToThread.stop();

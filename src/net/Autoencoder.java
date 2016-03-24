@@ -40,6 +40,18 @@ class Autoencoder {
         update(input, hidden, out, hidden1, batchsize);
     }
 
+    private void difference(Layer original, Layer recover, int indexMapOut){
+        Matrix orMatrix = original.getMap(indexMapOut, 0);
+        Matrix recMatrix = recover.getMap(indexMapOut, 0);
+        double diff = 0.0;
+        for (int i = 0; i < orMatrix.getRowNum(); i++) {
+            for (int j = 0; j < orMatrix.getColNum(); j++) {
+                diff += Math.abs(orMatrix.getValue(i,j) - recMatrix.getValue(i,j));
+            }
+        }
+        System.out.println(diff);
+    }
+
     private void train(Layer layer, Layer layerPrev, int indexMapOut, operation operation){
 
         for (int i = 0; i < layer.getMapOutNumber(); i++) {
@@ -152,14 +164,16 @@ class Autoencoder {
             for (int j = 0; j < kernels.size(); ++j) {
 
                 // формируем матрицу связей между входным и скрытым слоем, в которой число строк равно числу элементов входного слоя, а число столбцов числу элементов скрытого слоя
-                Matrix links = calcLinksLayers(x0, y0, x1, y1, batchsize, j);
+                Matrix differents = calcLinksLayers(x0, y0, x1, y1, batchsize, j);
 
+                // без сложения одинаковых весовых коэффициентов
                 Matrix kernel = kernels.get(j);
-                for (int k = 0; k < kernel.getRowNum(); k++) {
-                    for (int l = 0; l < kernel.getColNum(); l++) {
-
-//                        double value = kernel.getValue(k, l) + ((0.5 / batchsize) * );
-//                        kernel.setValue(k, l, value);
+                int num = 0;
+                for (int k = 0; k < kernel.getColNum(); k++) {
+                    for (int l = 0; l < kernel.getRowNum(); l++) {
+                        double sum = sumSimilarWeights(differents, num);
+                        kernel.setValue(l, k, kernel.getValue(k,l) + ((0.5 / batchsize) * sum));
+                        num++;
                     }
                 }
             }
@@ -168,11 +182,24 @@ class Autoencoder {
         // обновление порогов
     }
 
+    private double sumSimilarWeights(final Matrix matrix, int i){
+        int j = 0;
+        double sum = 0.0;
+        int size = matrix.getColNum();
+
+        while(j < size){
+            sum += matrix.getValue(i,j);
+            i++;
+            j++;
+        }
+        return sum;
+    }
+
     private double getValue(Matrix matrix, int curValue, Size kernelSize, int kernelX, int kernelY, int kernelIndex){
 
         // рассчитываем текущее положение верхнего левого элемента ядра на карте по индексу количества пройденных ядер свертки
-        int minX = kernelIndex / (matrix.getColNum() - kernelSize.x + 2);
-        int minY = kernelIndex % (matrix.getColNum() - kernelSize.y + 2);
+        int minX = kernelIndex / (matrix.getColNum() - kernelSize.x + 1);
+        int minY = kernelIndex % (matrix.getColNum() - kernelSize.y + 1);
 
         // рассчитываем положение текущего элемента в матрице
         int row =  curValue / matrix.getColNum();
@@ -189,23 +216,21 @@ class Autoencoder {
     }
 
     private Matrix calcLinksLayers(Layer x0, Layer y0, Layer x1, Layer y1, int batchsize, int indexMap) {
-        int row = x0.getMapsSize().x * x0.getMapsSize().y;
         int column = y0.getMapsSize().x * y0.getMapsSize().y;
-        Matrix links = new Matrix(new Size(row, column));
+        int row = y0.getKernelSize().x * y0.getKernelSize().y - 1 + column;
+        Matrix differents = new Matrix(new Size(row, column));
 
         Size kernelSize = y0.getKernelSize();
         int x0Index = 0, y0Index = 0;
 
+        boolean end = false;
         for (int j = 0; j < column; ) {
-            for (int i = 0; i < row; ) {
-
-                double value = 0.0;
-                int kernelSizeRow = y0.getKernelSize().x;
-                int kernelSizeCol = y0.getKernelSize().y;
+            for (int i = 0; i < row && !end; ) {
 
                 // работаем с матрицей скрытого и входного слоев учитывая размерность матрицы весов
-                for (int k = 0; k < kernelSizeRow; k++) {
-                    for (int l = 0; l < kernelSizeCol; l++) {
+                for (int k = 0; k < kernelSize.x; k++) {
+                    for (int l = 0; l < kernelSize.y; l++) {
+                        double value = 0.0;
                         for (int m = 0; m < batchsize; m++) {
                             double x0Value = getValue(x0.getMap(m, indexMap), x0Index, kernelSize, k, l, j);
                             double y0Value = getValue(y0.getMap(m, indexMap), y0Index);
@@ -213,16 +238,20 @@ class Autoencoder {
                             double y1Value = getValue(y1.getMap(m, indexMap), y0Index);
                             value += (x0Value * y0Value) - (x1Value * y1Value);
                         }
-                        links.setValue(i, j, value);
+                        differents.setValue(i, j, value);
                         x0Index++;
                         i++;
                     }
                 }
                 y0Index++;
                 j++;
+                i = j;
+                if (j == column){
+                    end = true;
+                }
             }
         }
 
-        return links;
+        return differents;
     }
 }
