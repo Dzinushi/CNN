@@ -10,6 +10,7 @@ import java.io.IOException;
  */
 public interface DataBase {
     void load(String imagePath, String lablePath, int number) throws IOException;
+    double[][] getData();
     double[] getData(int index);
     double[] getLabel(int index);
     int getSize();

@@ -17,7 +17,7 @@ public class TestNetOnDataTest {
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read("");
+            cnn = cnn.read("net_mnist_60000");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

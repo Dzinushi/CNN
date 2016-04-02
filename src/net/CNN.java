@@ -21,6 +21,7 @@ public class CNN implements Serializable{
     private boolean autosave;
 
     private boolean usingAutoencoder;
+    private int autoencoderIteration;
 
     private static final long serialVersionUID = -2606860604729216288L;
 
@@ -34,6 +35,7 @@ public class CNN implements Serializable{
         name = "";
         autosave = false;
         usingAutoencoder = false;
+        autoencoderIteration = 0;
     }
 
     /**
@@ -102,22 +104,27 @@ public class CNN implements Serializable{
     private void trainWithAutoencoder(int iteration, int numbatches, DataBase trainData){
         System.out.println("Start study net using autoencoder");
 
-        int index;
-        for (int i = 0; i < iteration; i++) {
-            this.timeTraining.start();
 
-            index = 0;
-            for (int j = 0; j < numbatches; j++) {
-                double[][] imageGroupList = new double[batchsize][];
-                List<Size> sizeGroupList = new ArrayList<>();
-                for (int k = 0; k < batchsize; k++) {
-                    double[] image = trainData.getData(index);
-                    imageGroupList[k] = image;
-                    Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
-                    sizeGroupList.add(imageSize);
-                    index++;
-                }
-                trainAllLayers(imageGroupList, sizeGroupList);
+        double[][] imageGroupList = trainData.getData();
+        Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
+
+       Autoencoder autoencoder = new Autoencoder();
+        for (int i = autoencoderIteration; i < iteration; i++) {
+
+            this.timeTraining.start();
+            trainAllLayers(imageGroupList, imageSize, autoencoder);
+
+            System.out.printf("%d from %d\tTime: %.3fs\n",
+                    i+1,
+                    iteration,
+                    this.timeTraining.getTimeLast() / 1000.0);
+
+            // сохраняем состояние сети после каждой итерации
+            try {
+                autoencoderIteration++;
+                save(name);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
         setUsingAutoencoder(false);
@@ -176,36 +183,42 @@ public class CNN implements Serializable{
     }
 
     // обучение всех групповых элементов с ипользованием автоэнкодера
-    private void trainAllLayers(double[][] data, List<Size> imageSize){
+    private void trainAllLayers(double[][] data, Size imageSize, Autoencoder autoencoder){
         Layer layerPrev = null;
-        for (Layer layer : layers) {
-            switch (layer.getType()){
-                case INPUT:
-                    for (int i = 0; i < this.batchsize; i++) {
-                        trainInputLayer(data[i], imageSize.get(i), i);
-                    }
-                    break;
+        int j = 0;
 
-                case CONVOLUTION:
-                    for (int i = 0; i < this.batchsize; i++) {
-                        trainConvLayer(layer, layerPrev, i);
-                    }
-                    Autoencoder autoencoder = new Autoencoder();
-                    autoencoder.start(layer, layerPrev, this.batchsize);
-                    break;
+        while ( j < data.length ) {
+            int nRunAutoencoder = 0;
+            for (Layer layer : layers) {
+                switch (layer.getType()){
+                    case INPUT:
+                        for (int i = 0; i < this.batchsize; i++) {
+                            trainInputLayer(data[j], imageSize, i);
+                            ++j;
+                        }
+                        break;
 
-                case SUBSAMPLING:
-                    for (int i = 0; i < this.batchsize; i++) {
-                        trainSubLayer(layer, layerPrev, i);
-                    }
-                    break;
+                    case CONVOLUTION:
+                        for (int i = 0; i < this.batchsize; i++) {
+                            trainConvLayer(layer, layerPrev, i);
+                        }
+                        autoencoder.start(layer, layerPrev, this.batchsize, nRunAutoencoder);
+                        nRunAutoencoder++;
+                        break;
 
-                case OUTPUT:
-                    for (int i = 0; i < this.batchsize; i++) {
-                        trainOutLayer(layer, layerPrev, i);
-                    }
+                    case SUBSAMPLING:
+                        for (int i = 0; i < this.batchsize; i++) {
+                            trainSubLayer(layer, layerPrev, i);
+                        }
+                        break;
+
+                    case OUTPUT:
+                        for (int i = 0; i < this.batchsize; i++) {
+                            trainOutLayer(layer, layerPrev, i);
+                        }
+                }
+                layerPrev = layer;
             }
-            layerPrev = layer;
         }
     }
 

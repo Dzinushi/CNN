@@ -78,6 +78,11 @@ public class Mnist implements DataBase{
         normalizeData();
     }
 
+    @Override
+    public double[][] getData() {
+        return data;
+    }
+
     private void normalizeData(){
         //System.out.println("Start normalize data ...");
         max = Util.max(data);
