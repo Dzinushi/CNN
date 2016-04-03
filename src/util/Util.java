@@ -67,4 +67,13 @@ public class Util {
 
         return randpermData;
     }
+
+    public static double[] toDoubleArray(String[] strings){
+        double[] doubles = new double[strings.length];
+        for (int i = 0; i < strings.length; i++) {
+            doubles[i] = Double.valueOf(strings[i]);
+        }
+
+        return doubles;
+    }
 }

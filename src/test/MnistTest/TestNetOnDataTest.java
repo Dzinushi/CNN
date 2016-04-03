@@ -1,4 +1,4 @@
-package test;
+package test.MnistTest;
 
 import java.io.IOException;
 import dataset.Mnist;

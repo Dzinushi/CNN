@@ -259,7 +259,7 @@ class Autoencoder {
                 double recValue = getValue(recover.getMap(m, indexMap), index);
                 value += comeValue - recValue;
             }
-            differences[i] = value;
+            differences[i] = value / batchsize;
             index++;
         }
 
@@ -289,7 +289,7 @@ class Autoencoder {
                             double y1Value = getValue(y1.getMap(m, indexHiddenMap), y0Index);
                             value += (x0Value * y0Value) - (x1Value * y1Value);
                         }
-                        differences.setValue(i, j, value);
+                        differences.setValue(i, j, value / batchsize);
                         x0Index++;
                         i++;
                     }

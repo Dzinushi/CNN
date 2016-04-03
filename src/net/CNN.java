@@ -153,7 +153,7 @@ public class CNN implements Serializable{
                 for (int k = 0; k < batchsize; k++) {
                     double[] image = trainData.getData(index);
                     double[] label = trainData.getLabel(index);
-                    Size imageSize = new Size(trainData.getImageWidth(), trainData.getImageHeight());
+                    Size imageSize = new Size(trainData.getImageHeight(), trainData.getImageWidth());
 
                     trainAllLayers(image, imageSize, k);
                     boolean right = backPropagation(label, k);
@@ -162,6 +162,9 @@ public class CNN implements Serializable{
                         precision.increase();
                     }
                     index++;
+                    if (index == 8625){
+                        index = 8625;
+                    }
                 }
                 update();
             }
@@ -264,7 +267,7 @@ public class CNN implements Serializable{
         Layer layer = layers.get(0);
         for (int i = 0; i < imageSize.x; i++) {
             for (int j = 0; j < imageSize.y; j++) {
-                layer.setMapOutValue(indexMapOut, 0, i, j, data[layer.getMapsSize().x * i + j]);
+                layer.setMapOutValue(indexMapOut, 0, i, j, data[imageSize.y * i + j]);
             }
         }
     }
@@ -642,7 +645,7 @@ public class CNN implements Serializable{
     public Precision test(DataBase testData){
         precision = new Precision();
         precision.setCount(testData.getSize());
-        Size imageSize = new Size(testData.getImageWidth(), testData.getImageHeight());
+        Size imageSize = new Size(testData.getImageHeight(), testData.getImageWidth());
 
         for (int i = 0; i < testData.getSize(); i++) {
 

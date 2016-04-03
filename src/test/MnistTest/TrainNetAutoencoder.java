@@ -1,4 +1,4 @@
-package test;
+package test.MnistTest;
 
 import dataset.Mnist;
 import net.CNN;
@@ -35,7 +35,7 @@ public class TrainNetAutoencoder {
         cnn.setup(layers, 25);                  // batchsize
         cnn.setName(netName);
         cnn.autosave(true);
-        cnn.setUsingAutoencoder(true);
+        cnn.setUsingAutoencoder(false);
         cnn.train(trainData, testData, 100);    // iterations
 
         TaskToThread.stop();

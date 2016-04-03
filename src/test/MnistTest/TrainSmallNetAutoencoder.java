@@ -1,22 +1,22 @@
-package test;
+package test.MnistTest;
+
 
 import dataset.Mnist;
 import net.CNN;
-import net.Layer;
 import net.CreateLayer;
+import net.Layer;
 import util.Size;
 import util.TaskToThread;
 
 import java.io.IOException;
 
-public class TrainNet {
-
+public class TrainSmallNetAutoencoder {
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
         layers.createLayer(Layer.inputLayer(new Size(28, 28)));
-        layers.createLayer(Layer.convLayer(10, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(2, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(18, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(4, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
         layers.createLayer(Layer.outputLayer(10));
 
@@ -26,14 +26,15 @@ public class TrainNet {
         String labelTest = "database/MNIST/test-labels.idx1-ubyte";
 
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 60000);
+        trainData.load(imagesTrain, labelsTrain, 1000);
         Mnist testData = new Mnist();
-        testData.load(imagesTest, labelTest, 10000);
+        testData.load(imagesTest, labelTest, 1000);
 
         CNN cnn = new CNN();
-        cnn.setup(layers, 50);                  // batchsize
-        cnn.setName("net_mnist_60000 (1-10-0.5-20-0.5-10)");
-        cnn.autosave(true);
+        cnn.setName("cnn_1000_2_(0.5)_4_(0.5)_10_autoencoder");
+        cnn.setup(layers, 10);                  // batchsize
+        cnn.autosave(false);
+        cnn.setUsingAutoencoder(true);
         cnn.train(trainData, testData, 100);    // iterations
 
         TaskToThread.stop();

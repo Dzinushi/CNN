@@ -47,8 +47,8 @@ public class Mnist implements DataBase{
         label = new double[number][10];
         data = new double[number][numRows * numCols];
 
-        imageWidth = numCols;
-        imageHeight = numRows;
+        setImageWidth(numCols);
+        setImageHeight(numRows);
 
         if (numLabels != numImages) {
             System.err.println("Image file and label file do not contain the same number of entries.");
@@ -83,6 +83,33 @@ public class Mnist implements DataBase{
         return data;
     }
 
+    @Override
+    public void setLabel(int index, double[] label) {
+        this.label[index] = label;
+    }
+
+    @Override
+    public void setData(int index, double[] data) {
+        this.data[index] = data;
+    }
+
+    @Override
+    public void setSize(int size) {
+        this.size = size;
+        this.data = new double[size][];
+        this.label = new double[size][];
+    }
+
+    @Override
+    public void setImageWidth(int width) {
+        this.imageWidth = width;
+    }
+
+    @Override
+    public void setImageHeight(int imageHeight) {
+        this.imageHeight = imageHeight;
+    }
+
     private void normalizeData(){
         //System.out.println("Start normalize data ...");
         max = Util.max(data);
@@ -110,7 +137,6 @@ public class Mnist implements DataBase{
         return imageHeight;
     }
 
-    @Override
     public int getMaxValue() {
         return max;
     }
