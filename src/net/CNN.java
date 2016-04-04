@@ -29,7 +29,7 @@ public class CNN implements Serializable{
     public CNN(){
         batchsize = 0;
         lambda = 0;
-        alpha = 0.5;
+        alpha = 0.8;
         layers = new ArrayList<>();
         timeTraining = new TimeCNN();
         name = "";
@@ -737,5 +737,9 @@ public class CNN implements Serializable{
 
     public void setUsingAutoencoder(boolean usingAutoencoder) {
         this.usingAutoencoder = usingAutoencoder;
+    }
+
+    public void setAlpha(double alpha){
+        this.alpha = alpha;
     }
 }

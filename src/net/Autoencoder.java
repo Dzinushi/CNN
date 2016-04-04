@@ -13,7 +13,7 @@ class Autoencoder {
     private List<Layer> inputs;   // список весовых коэффициентов и номер слоя, которому они принадлежат
     private List<Layer> hiddens;   // список порогов и номер слоя, которому они принадлежат
 
-    public Autoencoder(){
+    Autoencoder(){
         inputs = new ArrayList<>();
         hiddens = new ArrayList<>();
     }
@@ -29,8 +29,8 @@ class Autoencoder {
      * @param input         - входной / субдескритизирующий слой
      * @param batchsize     - количество элементов групповой выборки
      *
-     * input -> hidden  -> out - первый прогон по автоэнкодеру
-     * out   -> hidden1        - второй прогон по автоэнкодеру
+     * input  -> hidden -> out          - первый прогон по автоэнкодеру
+     * hidden ->  out   -> hidden1      - второй прогон по автоэнкодеру
      * input    = x(0)
      * hidden   = y(0)
      * out      = x(1)

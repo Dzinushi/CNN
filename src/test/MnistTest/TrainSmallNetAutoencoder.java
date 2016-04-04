@@ -14,9 +14,9 @@ public class TrainSmallNetAutoencoder {
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
         layers.createLayer(Layer.inputLayer(new Size(28, 28)));
-        layers.createLayer(Layer.convLayer(2, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(2, new Size(5, 3)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(4, new Size(5, 5)));
+        layers.createLayer(Layer.convLayer(4, new Size(5, 2)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
         layers.createLayer(Layer.outputLayer(10));
 
@@ -26,15 +26,15 @@ public class TrainSmallNetAutoencoder {
         String labelTest = "database/MNIST/test-labels.idx1-ubyte";
 
         Mnist trainData = new Mnist();
-        trainData.load(imagesTrain, labelsTrain, 1000);
+        trainData.load(imagesTrain, labelsTrain, 177);
         Mnist testData = new Mnist();
-        testData.load(imagesTest, labelTest, 1000);
+        testData.load(imagesTest, labelTest, 177);
 
         CNN cnn = new CNN();
         cnn.setName("cnn_1000_2_(0.5)_4_(0.5)_10_autoencoder");
         cnn.setup(layers, 10);                  // batchsize
         cnn.autosave(false);
-        cnn.setUsingAutoencoder(true);
+        cnn.setUsingAutoencoder(false);
         cnn.train(trainData, testData, 100);    // iterations
 
         TaskToThread.stop();

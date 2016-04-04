@@ -13,22 +13,22 @@ import java.io.IOException;
 public class TrainNet {
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
-        layers.createLayer(Layer.inputLayer(new Size(30, 15)));
-        layers.createLayer(Layer.convLayer(6, new Size(3, 2)));
+        layers.createLayer(Layer.inputLayer(new Size(25, 15)));
+        layers.createLayer(Layer.convLayer(4, new Size(6, 2)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(12, new Size(3, 2)));
+        layers.createLayer(Layer.convLayer(8, new Size(5, 2)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.outputLayer(4));
+        layers.createLayer(Layer.outputLayer(11));
 
-        String imagesTrain = "database/TENNIS/406 Forehands_data";
-        String labelsTrain = "database/TENNIS/406 Forehands_label";
-        String imagesTest = "database/TENNIS/406 Forehands_data";
-        String labelTest = "database/TENNIS/406 Forehands_label";
+        String imagesTrain = "database/TENNIS/tennis_train_data";
+        String labelsTrain = "database/TENNIS/tennis_train_label";
+        String imagesTest = "database/TENNIS/tennis_test_data";
+        String labelTest = "database/TENNIS/tennis_test_label";
 
         Tennis trainData = new Tennis();
-        trainData.load(imagesTrain, labelsTrain, 60);
+        trainData.load(imagesTrain, labelsTrain, 400);
         Tennis testData = new Tennis();
-        testData.load(imagesTest, labelTest, 60);
+        testData.load(imagesTest, labelTest, 400);
 
         // назначаем случайные индексы массиву
         int[] randIndex = Util.randPerm(trainData.getSize());
@@ -44,10 +44,14 @@ public class TrainNet {
         }
 
         CNN cnn = new CNN();
-        cnn.setup(layers, 12);                  // batchsize
-        cnn.setName("net_mnist_60 (1-10-0.5-20-0.5-10)");
+        cnn.setup(layers, 16);                          // batchsize
+        cnn.setAlpha(0.8);
+        cnn.setName("net_tennis_400_with_control_data");
         cnn.autosave(true);
-        cnn.train(randTrainData, testData, 100);    // iterations
+
+        cnn.train(randTrainData, testData, 5000);       // iterations
+
+        cnn.save("net_tennis_400_with_control_data");
 
         TaskToThread.stop();
     }
