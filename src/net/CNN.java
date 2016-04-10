@@ -171,12 +171,14 @@ public class CNN implements Serializable{
 
             // Проверка на тестируемой выборке. Сохранение лучшего результата
             Precision testPrecision = test(testData);
-            if (testPrecision.getValue() > bestPrecision.getValue() && autosave){
-                bestPrecision = testPrecision;
-                try {
-                    save(name);
-                } catch (IOException e) {
-                    e.printStackTrace();
+            if (autosave) {
+                if (testPrecision.getValue() > bestPrecision.getValue()) {
+                    bestPrecision = testPrecision;
+                    try {
+                        save(name);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 

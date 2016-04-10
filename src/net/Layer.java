@@ -142,18 +142,7 @@ public class Layer implements Serializable{
 
     public void setOutKernel(final int mapOutNumber, final Size kernelSize){
         this.kernelSize = kernelSize;
-        kernel = new ArrayList<>();
-
-        for (int i = 0; i < mapOutNumber; i++) {
-            List<Matrix> matrixes = new ArrayList<>();
-            for (int j = 0; j < getMapOutNumber(); j++) {
-                Matrix matrix = new Matrix(getKernelSize());
-                matrixes.add(matrix);
-            }
-            kernel.add(matrixes);
-        }
-
-        setKernelRandomValue();
+        setKernelSize(mapOutNumber);
     }
 
     private void setKernelRandomValue(){

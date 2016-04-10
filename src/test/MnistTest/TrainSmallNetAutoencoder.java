@@ -14,9 +14,9 @@ public class TrainSmallNetAutoencoder {
     public static void main(String[] args) throws IOException {
         CreateLayer layers = new CreateLayer();
         layers.createLayer(Layer.inputLayer(new Size(28, 28)));
-        layers.createLayer(Layer.convLayer(2, new Size(5, 3)));
+        layers.createLayer(Layer.convLayer(2, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
-        layers.createLayer(Layer.convLayer(4, new Size(5, 2)));
+        layers.createLayer(Layer.convLayer(4, new Size(5, 5)));
         layers.createLayer(Layer.sampLayer(new Size(2, 2)));
         layers.createLayer(Layer.outputLayer(10));
 

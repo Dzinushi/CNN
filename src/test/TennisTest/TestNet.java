@@ -2,34 +2,35 @@ package test.TennisTest;
 
 import dataset.Tennis;
 import net.CNN;
+import util.LogCNN;
+import util.Precision;
 import util.TaskToThread;
+import util.TimeCNN;
 
 import java.io.IOException;
 
-public class ContinueTrain {
-    public static void main(String[] args) throws Exception {
-
-        String imagesTrain = "database/TENNIS/tennis_train_data";
-        String labelsTrain = "database/TENNIS/tennis_train_label";
+public class TestNet {
+    public static void main(String[] args) throws IOException {
         String imagesTest = "database/TENNIS/tennis_train_data";
         String labelsTest = "database/TENNIS/tennis_train_label";
 
-        Tennis trainData = new Tennis();
-        trainData.load(imagesTrain, labelsTrain, 400);
         Tennis testData = new Tennis();
         testData.load(imagesTest, labelsTest, 400);
-        String netName = "net_tennis_400";
 
         CNN cnn = new CNN();
         try {
-            cnn = cnn.read(netName);
+            cnn = cnn.read("net_tennis_400");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
-        cnn.setAlpha(0.005);
-        cnn.autosave(true);
-        cnn.train(trainData, testData, 100000);
+        System.out.println("\nStart testing");
+        TimeCNN timeTest = new TimeCNN();
+        timeTest.start();
+
+        Precision precision = cnn.test(testData);
+
+        LogCNN.printTestInfo(precision, timeTest.getTimeLast());
 
         TaskToThread.stop();
     }
